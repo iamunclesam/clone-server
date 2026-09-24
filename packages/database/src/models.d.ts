@@ -73,6 +73,8 @@ export declare enum EscalationStatus {
     RESOLVED = "RESOLVED",
     ESCALATED = "ESCALATED"
 }
+export declare const WorkflowModel: mongoose.Model<any, {}, {}, {}, any, any>;
+export declare const WorkflowStepModel: mongoose.Model<any, {}, {}, {}, any, any>;
 export declare const UserModel: mongoose.Model<any, {}, {}, {}, any, any>;
 export declare const CompanyModel: mongoose.Model<any, {}, {}, {}, any, any>;
 export declare const MembershipModel: mongoose.Model<any, {}, {}, {}, any, any>;

@@ -5,6 +5,8 @@ export interface AIEmployeeProfile {
     role: string;
     personality: string;
     systemInstructions: string;
+    llmProvider?: string;
+    llmModel?: string;
     permissions: {
         toolName: string;
         requiresApproval: boolean;

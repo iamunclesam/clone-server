@@ -1,4 +1,4 @@
-import { MemoryScope } from "@prisma/client";
+export type MemoryScope = "COMPANY" | "TEAM" | "EMPLOYEE" | "TASK" | "GLOBAL";
 export interface MemoryQuery {
     companyId: string;
     employeeId?: string;

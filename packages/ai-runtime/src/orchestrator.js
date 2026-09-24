@@ -15,6 +15,8 @@ class AIEmployeeOrchestrator {
     async executeTask(input) {
         const traceId = `tr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
         const sanitizedPrompt = sanitizer_1.PromptSanitizer.sanitizeInput(input.naturalPrompt);
+        const llmProvider = input.employee.llmProvider || "mistral";
+        const llmModel = input.employee.llmModel || "mistral-large-latest";
         const context = {
             executionId: `exec_${Date.now()}`,
             traceId,
@@ -29,10 +31,10 @@ class AIEmployeeOrchestrator {
             createdAt: new Date(),
             updatedAt: new Date(),
         };
-        this.addLogStep(context, "RECEIVED", `Execution initialized for AI Employee ${input.employee.name} (${input.employee.role}).`);
+        this.addLogStep(context, "RECEIVED", `Execution initialized for AI Employee ${input.employee.name} (${input.employee.role}) powered by ${llmProvider.toUpperCase()} (${llmModel}).`);
         // 1. Transition to PLANNING
         context.currentState = state_machine_1.ExecutionStateMachine.transition(context.currentState, "PLANNING");
-        this.addLogStep(context, "PLANNING", `Analyzing task: "${sanitizedPrompt}" using persona instructions.`);
+        this.addLogStep(context, "PLANNING", `Analyzing task: "${sanitizedPrompt}" using ${llmProvider.toUpperCase()} model: ${llmModel}.`);
         // Fetch memory context
         const memories = await this.memoryEngine.searchMemories({
             companyId: input.companyId,

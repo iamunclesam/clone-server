@@ -10,31 +10,9 @@ var __createBinding = (this && this.__createBinding) || (Object.create ? (functi
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
 }));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
 var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -43,6 +21,7 @@ exports.prisma = void 0;
 exports.connectToDatabase = connectToDatabase;
 exports.toPlainDoc = toPlainDoc;
 const mongoose_1 = __importDefault(require("mongoose"));
+const models_1 = require("./models");
 __exportStar(require("./models"), exports);
 __exportStar(require("./cloneConfig"), exports);
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/clone_db";
@@ -196,6 +175,8 @@ const FIELD_ALIASES = {
 function normalizeDoc(doc) {
     if (!doc)
         return doc;
+    if (doc instanceof Date)
+        return doc;
     if (Array.isArray(doc))
         return doc.map(normalizeDoc);
     if (doc instanceof mongoose_1.default.Types.ObjectId)
@@ -210,6 +191,8 @@ function normalizeDoc(doc) {
     }
     for (const k of Object.keys(obj)) {
         if (!obj[k])
+            continue;
+        if (obj[k] instanceof Date)
             continue;
         if (obj[k] instanceof mongoose_1.default.Types.ObjectId || obj[k]?.constructor?.name === "ObjectId") {
             obj[k] = obj[k].toString();
@@ -258,62 +241,55 @@ exports.prisma = {
     $disconnect: async () => mongoose_1.default.disconnect(),
     user: {
         findUnique: async (a) => {
-            const { UserModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (a.where?.email)
-                return N(UserModel.findOne({ email: a.where.email }));
+                return N(models_1.UserModel.findOne({ email: a.where.email }));
             if (a.where?.id) {
                 if (!isObjectId(a.where.id))
                     return null;
-                return N(UserModel.findById(a.where.id));
+                return N(models_1.UserModel.findById(a.where.id));
             }
             return null;
         },
         upsert: async (a) => {
-            const { UserModel } = await Promise.resolve().then(() => __importStar(require("./models")));
-            let d = await UserModel.findOne(a.where);
+            let d = await models_1.UserModel.findOne(a.where);
             if (!d)
-                d = await UserModel.create(a.create);
+                d = await models_1.UserModel.create(a.create);
             return N(d);
         },
-        create: async (a) => N((await Promise.resolve().then(() => __importStar(require("./models")))).UserModel.create(a.data)),
+        create: async (a) => N(models_1.UserModel.create(a.data)),
         update: async (a) => {
-            const { UserModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (!isObjectId(a.where?.id))
                 return null;
-            return N(UserModel.findByIdAndUpdate(a.where.id, a.data, { new: true }));
+            return N(models_1.UserModel.findByIdAndUpdate(a.where.id, a.data, { new: true }));
         },
     },
     company: {
         findUnique: async (a) => {
-            const { CompanyModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (a.where?.slug)
-                return N(CompanyModel.findOne({ slug: a.where.slug }));
+                return N(models_1.CompanyModel.findOne({ slug: a.where.slug }));
             if (a.where?.id) {
                 if (!isObjectId(a.where.id))
                     return null;
-                return N(CompanyModel.findById(a.where.id));
+                return N(models_1.CompanyModel.findById(a.where.id));
             }
             return null;
         },
-        findMany: async (a) => N((await Promise.resolve().then(() => __importStar(require("./models")))).CompanyModel.find(a?.where || {})),
+        findMany: async (a) => N(models_1.CompanyModel.find(a?.where || {})),
         upsert: async (a) => {
-            const { CompanyModel } = await Promise.resolve().then(() => __importStar(require("./models")));
-            let d = await CompanyModel.findOne(a.where);
+            let d = await models_1.CompanyModel.findOne(a.where);
             if (!d)
-                d = await CompanyModel.create(a.create);
+                d = await models_1.CompanyModel.create(a.create);
             return N(d);
         },
-        create: async (a) => N((await Promise.resolve().then(() => __importStar(require("./models")))).CompanyModel.create(a.data)),
+        create: async (a) => N(models_1.CompanyModel.create(a.data)),
         update: async (a) => {
-            const { CompanyModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (!isObjectId(a.where?.id))
                 return null;
-            return N(CompanyModel.findByIdAndUpdate(a.where.id, a.data, { new: true }));
+            return N(models_1.CompanyModel.findByIdAndUpdate(a.where.id, a.data, { new: true }));
         },
     },
     membership: {
         findUnique: async (a) => {
-            const { MembershipModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const raw = a.where?.userId_companyId || a.where;
             if (raw.userId && !isObjectId(raw.userId))
                 return null;
@@ -324,10 +300,9 @@ exports.prisma = {
                 w.userId = toId(raw.userId);
             if (raw.companyId)
                 w.companyId = toId(raw.companyId);
-            return N(MembershipModel.findOne(w).populate("companyId").populate("userId"));
+            return N(models_1.MembershipModel.findOne(w).populate("companyId").populate("userId"));
         },
         findMany: async (a) => {
-            const { MembershipModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.userId) {
                 if (!isObjectId(a.where.userId))
@@ -339,10 +314,9 @@ exports.prisma = {
                     return [];
                 w.companyId = toId(a.where.companyId);
             }
-            return N(MembershipModel.find(w).populate("companyId").populate("userId"));
+            return N(models_1.MembershipModel.find(w).populate("companyId").populate("userId"));
         },
         upsert: async (a) => {
-            const { MembershipModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const raw = a.where?.userId_companyId || a.where;
             if (raw.userId && !isObjectId(raw.userId))
                 return null;
@@ -353,32 +327,29 @@ exports.prisma = {
                 w.userId = toId(raw.userId);
             if (raw.companyId)
                 w.companyId = toId(raw.companyId);
-            let d = await MembershipModel.findOne(w);
+            let d = await models_1.MembershipModel.findOne(w);
             if (!d)
-                d = await MembershipModel.create(ensureIds(a.create));
+                d = await models_1.MembershipModel.create(ensureIds(a.create));
             return N(d);
         },
         create: async (a) => {
-            const { MembershipModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const data = ensureIds(a.data);
-            return N(MembershipModel.create(data));
+            return N(models_1.MembershipModel.create(data));
         },
     },
     team: {
         create: async (a) => {
-            const { TeamModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const data = ensureIds(a.data);
-            return N(TeamModel.create(data));
+            return N(models_1.TeamModel.create(data));
         },
         findMany: async (a) => {
-            const { TeamModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId) {
                 if (!isObjectId(a.where.companyId))
                     return [];
                 w.companyId = toId(a.where.companyId);
             }
-            let q = TeamModel.find(w);
+            let q = models_1.TeamModel.find(w);
             if (a?.include?.members)
                 q = q.populate("memberIds");
             if (a?.include?.leadEmployee)
@@ -389,11 +360,10 @@ exports.prisma = {
             return N(q);
         },
         findUnique: async (a) => {
-            const { TeamModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (a.where?.id) {
                 if (!isObjectId(a.where.id))
                     return null;
-                let q = TeamModel.findById(toId(a.where.id));
+                let q = models_1.TeamModel.findById(toId(a.where.id));
                 if (a?.include?.members)
                     q = q.populate("memberIds");
                 if (a?.include?.leadEmployee)
@@ -402,15 +372,43 @@ exports.prisma = {
             }
             return null;
         },
+        findFirst: async (a) => {
+            const w = {};
+            if (a?.where?.id) {
+                if (!isObjectId(a.where.id))
+                    return null;
+                w._id = toId(a.where.id);
+            }
+            if (a?.where?.companyId) {
+                if (!isObjectId(a.where.companyId))
+                    return null;
+                w.companyId = toId(a.where.companyId);
+            }
+            let q = models_1.TeamModel.findOne(w);
+            if (a?.include?.members)
+                q = q.populate("memberIds");
+            if (a?.include?.leadEmployee)
+                q = q.populate("leadEmployeeId");
+            return N(q);
+        },
+        update: async (a) => {
+            if (!isObjectId(a.where?.id))
+                return null;
+            const data = ensureIds(a.data);
+            return N(models_1.TeamModel.findByIdAndUpdate(toId(a.where.id), data, { new: true }));
+        },
+        delete: async (a) => {
+            if (!isObjectId(a.where?.id))
+                return null;
+            return N(models_1.TeamModel.findByIdAndDelete(toId(a.where.id)));
+        },
     },
     connectedAccount: {
         create: async (a) => {
-            const { ConnectedAccountModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const data = ensureIds(a.data);
-            return N(ConnectedAccountModel.create(data));
+            return N(models_1.ConnectedAccountModel.create(data));
         },
         findMany: async (a) => {
-            const { ConnectedAccountModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId) {
                 if (!isObjectId(a.where.companyId))
@@ -421,7 +419,7 @@ exports.prisma = {
                 w.status = a.where.status;
             if (a?.where?.provider)
                 w.provider = a.where.provider;
-            let q = ConnectedAccountModel.find(w);
+            let q = models_1.ConnectedAccountModel.find(w);
             if (a?.orderBy)
                 q = applySort(q, a.orderBy, { connectedAt: -1 });
             else
@@ -431,7 +429,6 @@ exports.prisma = {
             return N(q);
         },
         findFirst: async (a) => {
-            const { ConnectedAccountModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const q = {};
             if (a.where?.id) {
                 if (!isObjectId(a.where.id))
@@ -445,24 +442,21 @@ exports.prisma = {
             }
             if (a.where?.provider)
                 q.provider = a.where.provider;
-            return N(ConnectedAccountModel.findOne(q));
+            return N(models_1.ConnectedAccountModel.findOne(q));
         },
         update: async (a) => {
-            const { ConnectedAccountModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (!isObjectId(a.where?.id))
                 return null;
             const data = ensureIds(a.data);
-            return N(ConnectedAccountModel.findByIdAndUpdate(toId(a.where.id), data, { new: true }));
+            return N(models_1.ConnectedAccountModel.findByIdAndUpdate(toId(a.where.id), data, { new: true }));
         },
     },
     aIEmployee: {
         create: async (a) => {
-            const { AIEmployeeModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const data = ensureIds(a.data);
-            return N(AIEmployeeModel.create(data));
+            return N(models_1.AIEmployeeModel.create(data));
         },
         findMany: async (a) => {
-            const { AIEmployeeModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId) {
                 if (!isObjectId(a.where.companyId))
@@ -471,7 +465,7 @@ exports.prisma = {
             }
             if (a?.where?.status)
                 w.status = a.where.status;
-            let q = AIEmployeeModel.find(w);
+            let q = models_1.AIEmployeeModel.find(w);
             if (a?.include?.team || a?.include?.teamId) {
                 q = q.populate({
                     path: "teamId",
@@ -489,11 +483,10 @@ exports.prisma = {
             return N(q);
         },
         findUnique: async (a) => {
-            const { AIEmployeeModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (a.where?.id) {
                 if (!isObjectId(a.where.id))
                     return null;
-                let q = AIEmployeeModel.findById(toId(a.where.id));
+                let q = models_1.AIEmployeeModel.findById(toId(a.where.id));
                 if (a?.include?.team)
                     q = q.populate("teamId");
                 if (a?.include?.permissions)
@@ -507,7 +500,6 @@ exports.prisma = {
             return null;
         },
         findFirst: async (a) => {
-            const { AIEmployeeModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const q = {};
             if (a.where?.id) {
                 if (!isObjectId(a.where.id))
@@ -519,7 +511,7 @@ exports.prisma = {
                     return null;
                 q.companyId = toId(a.where.companyId);
             }
-            let qry = AIEmployeeModel.findOne(q);
+            let qry = models_1.AIEmployeeModel.findOne(q);
             if (a?.include?.team)
                 qry = qry.populate("teamId");
             if (a?.include?.permissions)
@@ -531,36 +523,31 @@ exports.prisma = {
             return N(qry);
         },
         update: async (a) => {
-            const { AIEmployeeModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (!isObjectId(a.where?.id))
                 return null;
             const data = ensureIds(a.data);
-            return N(AIEmployeeModel.findByIdAndUpdate(toId(a.where?.id), data, { new: true }));
+            return N(models_1.AIEmployeeModel.findByIdAndUpdate(toId(a.where?.id), data, { new: true }));
         },
         updateMany: async (a) => {
-            const { AIEmployeeModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const q = {};
             if (a.where?.id)
                 q._id = toId(a.where.id);
             if (a.where?.companyId)
                 q.companyId = toId(a.where.companyId);
-            return AIEmployeeModel.updateMany(q, ensureIds(a.data));
+            return models_1.AIEmployeeModel.updateMany(q, ensureIds(a.data));
         },
         delete: async (a) => {
-            const { AIEmployeeModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (!isObjectId(a.where?.id))
                 return null;
-            return N(AIEmployeeModel.findByIdAndDelete(toId(a.where?.id)));
+            return N(models_1.AIEmployeeModel.findByIdAndDelete(toId(a.where?.id)));
         },
     },
     task: {
         create: async (a) => {
-            const { TaskModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const data = ensureIds(a.data);
-            return N(TaskModel.create(data));
+            return N(models_1.TaskModel.create(data));
         },
         findMany: async (a) => {
-            const { TaskModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId) {
                 if (!isObjectId(a.where.companyId))
@@ -573,7 +560,7 @@ exports.prisma = {
                 w.priority = a.where.priority;
             if (a?.where?.assignedEmployeeId)
                 w.assignedEmployeeId = toId(a.where.assignedEmployeeId);
-            let q = TaskModel.find(w);
+            let q = models_1.TaskModel.find(w);
             if (a?.include?.assignedEmployee) {
                 q = q.populate({
                     path: "assignedEmployeeId",
@@ -598,11 +585,10 @@ exports.prisma = {
             return N(q);
         },
         findUnique: async (a) => {
-            const { TaskModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (a.where?.id) {
                 if (!isObjectId(a.where.id))
                     return null;
-                let q = TaskModel.findById(toId(a.where.id));
+                let q = models_1.TaskModel.findById(toId(a.where.id));
                 if (a?.include?.assignedEmployee)
                     q = q.populate("assignedEmployeeId");
                 if (a?.include?.executions)
@@ -614,7 +600,6 @@ exports.prisma = {
             return null;
         },
         findFirst: async (a) => {
-            const { TaskModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const q = {};
             if (a.where?.id) {
                 if (!isObjectId(a.where.id))
@@ -626,7 +611,7 @@ exports.prisma = {
                     return null;
                 q.companyId = toId(a.where.companyId);
             }
-            let qry = TaskModel.findOne(q);
+            let qry = models_1.TaskModel.findOne(q);
             if (a?.include?.assignedEmployee)
                 qry = qry.populate("assignedEmployeeId");
             if (a?.include?.executions)
@@ -636,17 +621,15 @@ exports.prisma = {
             return N(qry);
         },
         update: async (a) => {
-            const { TaskModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (!isObjectId(a.where?.id))
                 return null;
             const data = ensureIds(a.data);
-            return N(TaskModel.findByIdAndUpdate(toId(a.where?.id), data, { new: true }));
+            return N(models_1.TaskModel.findByIdAndUpdate(toId(a.where?.id), data, { new: true }));
         },
     },
     approvalRequest: {
-        create: async (a) => N((await Promise.resolve().then(() => __importStar(require("./models")))).ApprovalRequestModel.create(a.data)),
+        create: async (a) => N(models_1.ApprovalRequestModel.create(a.data)),
         findFirst: async (a) => {
-            const { ApprovalRequestModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const q = {};
             if (a?.where?.id) {
                 if (!isObjectId(a.where.id))
@@ -660,7 +643,7 @@ exports.prisma = {
             }
             if (a?.where?.status)
                 q.status = a.where.status;
-            let qry = ApprovalRequestModel.findOne(q);
+            let qry = models_1.ApprovalRequestModel.findOne(q);
             if (a?.include?.employee)
                 qry = qry.populate({ path: "employeeId", select: a.include.employee?.select ? Object.keys(a.include.employee.select).join(" ") : undefined });
             if (a?.include?.task)
@@ -668,11 +651,10 @@ exports.prisma = {
             return N(qry);
         },
         findUnique: async (a) => {
-            const { ApprovalRequestModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (a.where?.id) {
                 if (!isObjectId(a.where.id))
                     return null;
-                let q = ApprovalRequestModel.findById(a.where.id);
+                let q = models_1.ApprovalRequestModel.findById(a.where.id);
                 if (a?.include?.employee)
                     q = q.populate("employeeId");
                 if (a?.include?.task)
@@ -682,7 +664,6 @@ exports.prisma = {
             return null;
         },
         findMany: async (a) => {
-            const { ApprovalRequestModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId) {
                 if (!isObjectId(a.where.companyId))
@@ -691,7 +672,7 @@ exports.prisma = {
             }
             if (a?.where?.status)
                 w.status = a.where.status;
-            let q = ApprovalRequestModel.find(w);
+            let q = models_1.ApprovalRequestModel.find(w);
             if (a?.include?.employee) {
                 q = q.populate({
                     path: "employeeId",
@@ -710,16 +691,14 @@ exports.prisma = {
             return N(q);
         },
         update: async (a) => {
-            const { ApprovalRequestModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (!isObjectId(a.where?.id))
                 return null;
-            return N(ApprovalRequestModel.findByIdAndUpdate(a.where?.id, a.data, { new: true }));
+            return N(models_1.ApprovalRequestModel.findByIdAndUpdate(a.where?.id, a.data, { new: true }));
         },
     },
     employeeMemory: {
-        create: async (a) => N((await Promise.resolve().then(() => __importStar(require("./models")))).EmployeeMemoryModel.create(a.data)),
+        create: async (a) => N(models_1.EmployeeMemoryModel.create(a.data)),
         findMany: async (a) => {
-            const { EmployeeMemoryModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId) {
                 if (!isObjectId(a.where.companyId))
@@ -730,7 +709,7 @@ exports.prisma = {
                 w.employeeId = a.where.employeeId;
             if (a?.where?.scope)
                 w.scope = a.where.scope;
-            let q = EmployeeMemoryModel.find(w);
+            let q = models_1.EmployeeMemoryModel.find(w);
             if (a?.orderBy)
                 q = applySort(q, a.orderBy, { createdAt: -1 });
             if (a?.take)
@@ -739,9 +718,8 @@ exports.prisma = {
         },
     },
     activityLog: {
-        create: async (a) => N((await Promise.resolve().then(() => __importStar(require("./models")))).ActivityLogModel.create(a.data)),
+        create: async (a) => N(models_1.ActivityLogModel.create(a.data)),
         findMany: async (a) => {
-            const { ActivityLogModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId) {
                 if (!isObjectId(a.where.companyId))
@@ -752,7 +730,7 @@ exports.prisma = {
                 w.employeeId = a.where.employeeId;
             if (a?.where?.action)
                 w.action = a.where.action;
-            let q = ActivityLogModel.find(w);
+            let q = models_1.ActivityLogModel.find(w);
             if (a?.include?.employee) {
                 q = q.populate({
                     path: "employeeId",
@@ -779,38 +757,33 @@ exports.prisma = {
     },
     oAuthState: {
         create: async (a) => {
-            const { OAuthStateModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const data = ensureIds(a.data);
-            return N(OAuthStateModel.create(data));
+            return N(models_1.OAuthStateModel.create(data));
         },
         findUnique: async (a) => {
-            const { OAuthStateModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (a.where?.stateToken)
-                return N(OAuthStateModel.findOne({ stateToken: a.where.stateToken }));
+                return N(models_1.OAuthStateModel.findOne({ stateToken: a.where.stateToken }));
             if (a.where?.id) {
                 if (!isObjectId(a.where.id))
                     return null;
-                return N(OAuthStateModel.findById(toId(a.where.id)));
+                return N(models_1.OAuthStateModel.findById(toId(a.where.id)));
             }
             return null;
         },
         delete: async (a) => {
-            const { OAuthStateModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (a.where?.stateToken)
-                return N(OAuthStateModel.findOneAndDelete({ stateToken: a.where.stateToken }));
+                return N(models_1.OAuthStateModel.findOneAndDelete({ stateToken: a.where.stateToken }));
             if (a.where?.id && isObjectId(a.where.id))
-                return N(OAuthStateModel.findByIdAndDelete(toId(a.where.id)));
+                return N(models_1.OAuthStateModel.findByIdAndDelete(toId(a.where.id)));
             return null;
         },
     },
     auditLog: {
         create: async (a) => {
-            const { AuditLogModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const data = ensureIds(a.data);
-            return N(AuditLogModel.create(data));
+            return N(models_1.AuditLogModel.create(data));
         },
         findMany: async (a) => {
-            const { AuditLogModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId) {
                 if (!isObjectId(a.where.companyId))
@@ -821,7 +794,7 @@ exports.prisma = {
                 w.action = a.where.action;
             if (a?.where?.userId)
                 w.userId = toId(a.where.userId);
-            let q = AuditLogModel.find(w);
+            let q = models_1.AuditLogModel.find(w);
             if (a?.orderBy) {
                 const so = {};
                 for (const [k, v] of Object.entries(a.orderBy))
@@ -837,21 +810,19 @@ exports.prisma = {
         },
     },
     conversation: {
-        create: async (a) => N((await Promise.resolve().then(() => __importStar(require("./models")))).ConversationModel.create(a.data)),
+        create: async (a) => N(models_1.ConversationModel.create(a.data)),
         findMany: async (a) => {
-            const { ConversationModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId && isObjectId(a.where.companyId))
                 w.companyId = a.where.companyId;
             if (a?.where?.employeeId && isObjectId(a.where.employeeId))
                 w.employeeId = a.where.employeeId;
-            let q = ConversationModel.find(w).sort({ updatedAt: -1 });
+            let q = models_1.ConversationModel.find(w).sort({ updatedAt: -1 });
             if (a?.take)
                 q = q.limit(a.take);
             return N(q);
         },
         findFirst: async (a) => {
-            const { ConversationModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.id && isObjectId(a.where.id))
                 w._id = a.where.id;
@@ -859,52 +830,46 @@ exports.prisma = {
                 w.companyId = a.where.companyId;
             if (a?.where?.employeeId && isObjectId(a.where.employeeId))
                 w.employeeId = a.where.employeeId;
-            return N(ConversationModel.findOne(w).sort({ updatedAt: -1 }));
+            return N(models_1.ConversationModel.findOne(w).sort({ updatedAt: -1 }));
         },
         update: async (a) => {
-            const { ConversationModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (!isObjectId(a.where?.id))
                 return null;
-            return N(ConversationModel.findByIdAndUpdate(a.where.id, a.data, { new: true }));
+            return N(models_1.ConversationModel.findByIdAndUpdate(a.where.id, a.data, { new: true }));
         },
         delete: async (a) => {
-            const { ConversationModel, ConversationMessageModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (!isObjectId(a.where?.id))
                 return null;
-            await ConversationMessageModel.deleteMany({ conversationId: a.where.id });
-            return N(ConversationModel.findByIdAndDelete(a.where.id));
+            await models_1.ConversationMessageModel.deleteMany({ conversationId: a.where.id });
+            return N(models_1.ConversationModel.findByIdAndDelete(a.where.id));
         },
     },
     conversationMessage: {
-        create: async (a) => N((await Promise.resolve().then(() => __importStar(require("./models")))).ConversationMessageModel.create(a.data)),
+        create: async (a) => N(models_1.ConversationMessageModel.create(a.data)),
         findMany: async (a) => {
-            const { ConversationMessageModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.conversationId && isObjectId(a.where.conversationId))
                 w.conversationId = a.where.conversationId;
             if (a?.where?.companyId && isObjectId(a.where.companyId))
                 w.companyId = a.where.companyId;
-            let q = ConversationMessageModel.find(w).sort({ createdAt: 1 }).populate("senderId").populate("mentions").populate("taskId");
+            let q = models_1.ConversationMessageModel.find(w).sort({ createdAt: 1 }).populate("senderId").populate("mentions").populate("taskId");
             if (a?.take)
                 q = q.limit(a.take);
             return N(q);
         },
         update: async (a) => {
-            const { ConversationMessageModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (!isObjectId(a.where?.id))
                 return null;
-            return N(ConversationMessageModel.findByIdAndUpdate(a.where.id, a.data, { new: true }));
+            return N(models_1.ConversationMessageModel.findByIdAndUpdate(a.where.id, a.data, { new: true }));
         },
     },
     // ─── Runtime Engine Adapters ─────────────────────────────────────────────
     runtimeEvent: {
         create: async (a) => {
-            const { RuntimeEventModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const data = ensureIds(a.data);
-            return N(RuntimeEventModel.create(data));
+            return N(models_1.RuntimeEventModel.create(data));
         },
         findMany: async (a) => {
-            const { RuntimeEventModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId) {
                 if (!isObjectId(a.where.companyId))
@@ -917,14 +882,13 @@ exports.prisma = {
                 w.eventType = a.where.eventType;
             if (a?.where?.processedAt === null)
                 w.processedAt = null;
-            let q = RuntimeEventModel.find(w);
+            let q = models_1.RuntimeEventModel.find(w);
             q = applySort(q, a?.orderBy, { createdAt: -1 });
             if (a?.take)
                 q = q.limit(a.take);
             return N(q);
         },
         findFirst: async (a) => {
-            const { RuntimeEventModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.id && isObjectId(a.where.id))
                 w._id = toId(a.where.id);
@@ -932,37 +896,32 @@ exports.prisma = {
                 w.companyId = toId(a.where.companyId);
             if (a?.where?.deduplicationKey)
                 w.deduplicationKey = a.where.deduplicationKey;
-            return N(RuntimeEventModel.findOne(w));
+            return N(models_1.RuntimeEventModel.findOne(w));
         },
         update: async (a) => {
-            const { RuntimeEventModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (!isObjectId(a.where?.id))
                 return null;
-            return N(RuntimeEventModel.findByIdAndUpdate(toId(a.where.id), a.data, { new: true }));
+            return N(models_1.RuntimeEventModel.findByIdAndUpdate(toId(a.where.id), a.data, { new: true }));
         },
         count: async (a) => {
-            const { RuntimeEventModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId && isObjectId(a.where.companyId))
                 w.companyId = toId(a.where.companyId);
             if (a?.where?.processedAt === null)
                 w.processedAt = null;
-            return RuntimeEventModel.countDocuments(w);
+            return models_1.RuntimeEventModel.countDocuments(w);
         },
     },
     runtimeTrigger: {
         create: async (a) => {
-            const { RuntimeTriggerModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const data = ensureIds(a.data);
-            return N(RuntimeTriggerModel.create(data));
+            return N(models_1.RuntimeTriggerModel.create(data));
         },
         createMany: async (a) => {
-            const { RuntimeTriggerModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const docs = (a.data || []).map(ensureIds);
-            return RuntimeTriggerModel.insertMany(docs, { ordered: false });
+            return models_1.RuntimeTriggerModel.insertMany(docs, { ordered: false });
         },
         findMany: async (a) => {
-            const { RuntimeTriggerModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId) {
                 if (!isObjectId(a.where.companyId))
@@ -978,14 +937,13 @@ exports.prisma = {
                 w.enabled = a.where.enabled;
             if (a?.where?.triggerType)
                 w.triggerType = a.where.triggerType;
-            let q = RuntimeTriggerModel.find(w);
+            let q = models_1.RuntimeTriggerModel.find(w);
             q = applySort(q, a?.orderBy, { priority: 1, createdAt: -1 });
             if (a?.take)
                 q = q.limit(a.take);
             return N(q);
         },
         findFirst: async (a) => {
-            const { RuntimeTriggerModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.id && isObjectId(a.where.id))
                 w._id = toId(a.where.id);
@@ -997,30 +955,26 @@ exports.prisma = {
                 w.source = a.where.source;
             if (a?.where?.eventType)
                 w.eventType = a.where.eventType;
-            return N(RuntimeTriggerModel.findOne(w));
+            return N(models_1.RuntimeTriggerModel.findOne(w));
         },
         deleteMany: async (a) => {
-            const { RuntimeTriggerModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.cloneId && isObjectId(a.where.cloneId))
                 w.cloneId = toId(a.where.cloneId);
             if (a?.where?.companyId && isObjectId(a.where.companyId))
                 w.companyId = toId(a.where.companyId);
-            return RuntimeTriggerModel.deleteMany(w);
+            return models_1.RuntimeTriggerModel.deleteMany(w);
         },
     },
     runtimeAction: {
         create: async (a) => {
-            const { RuntimeActionModel } = await Promise.resolve().then(() => __importStar(require("./models")));
-            return N(RuntimeActionModel.create(ensureIds(a.data)));
+            return N(models_1.RuntimeActionModel.create(ensureIds(a.data)));
         },
         createMany: async (a) => {
-            const { RuntimeActionModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const docs = (a.data || []).map(ensureIds);
-            return RuntimeActionModel.insertMany(docs, { ordered: false });
+            return models_1.RuntimeActionModel.insertMany(docs, { ordered: false });
         },
         findMany: async (a) => {
-            const { RuntimeActionModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId) {
                 if (!isObjectId(a.where.companyId))
@@ -1034,29 +988,26 @@ exports.prisma = {
             }
             if (a?.where?.enabled !== undefined)
                 w.enabled = a.where.enabled;
-            let q = RuntimeActionModel.find(w);
+            let q = models_1.RuntimeActionModel.find(w);
             q = applySort(q, a?.orderBy, { createdAt: -1 });
             if (a?.take)
                 q = q.limit(a.take);
             return N(q);
         },
         deleteMany: async (a) => {
-            const { RuntimeActionModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.cloneId && isObjectId(a.where.cloneId))
                 w.cloneId = toId(a.where.cloneId);
             if (a?.where?.companyId && isObjectId(a.where.companyId))
                 w.companyId = toId(a.where.companyId);
-            return RuntimeActionModel.deleteMany(w);
+            return models_1.RuntimeActionModel.deleteMany(w);
         },
     },
     runtimeExecution: {
         create: async (a) => {
-            const { RuntimeExecutionModel } = await Promise.resolve().then(() => __importStar(require("./models")));
-            return N(RuntimeExecutionModel.create(ensureIds(a.data)));
+            return N(models_1.RuntimeExecutionModel.create(ensureIds(a.data)));
         },
         findMany: async (a) => {
-            const { RuntimeExecutionModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId) {
                 if (!isObjectId(a.where.companyId))
@@ -1070,7 +1021,7 @@ exports.prisma = {
             }
             if (a?.where?.status)
                 w.status = a.where.status;
-            let q = RuntimeExecutionModel.find(w);
+            let q = models_1.RuntimeExecutionModel.find(w);
             if (a?.include?.clone)
                 q = q.populate({ path: "cloneId", select: "name role avatarUrl status" });
             q = applySort(q, a?.orderBy, { createdAt: -1 });
@@ -1079,7 +1030,6 @@ exports.prisma = {
             return N(q);
         },
         findFirst: async (a) => {
-            const { RuntimeExecutionModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.id && isObjectId(a.where.id))
                 w._id = toId(a.where.id);
@@ -1089,19 +1039,17 @@ exports.prisma = {
                 w.cloneId = toId(a.where.cloneId);
             if (a?.where?.status)
                 w.status = a.where.status;
-            let qry = RuntimeExecutionModel.findOne(w);
+            let qry = models_1.RuntimeExecutionModel.findOne(w);
             if (a?.include?.clone)
                 qry = qry.populate({ path: "cloneId", select: "name role avatarUrl status" });
             return N(qry);
         },
         update: async (a) => {
-            const { RuntimeExecutionModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (!isObjectId(a.where?.id))
                 return null;
-            return N(RuntimeExecutionModel.findByIdAndUpdate(toId(a.where.id), a.data, { new: true }));
+            return N(models_1.RuntimeExecutionModel.findByIdAndUpdate(toId(a.where.id), a.data, { new: true }));
         },
         count: async (a) => {
-            const { RuntimeExecutionModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId && isObjectId(a.where.companyId))
                 w.companyId = toId(a.where.companyId);
@@ -1109,21 +1057,18 @@ exports.prisma = {
                 w.status = a.where.status;
             if (a?.where?.cloneId && isObjectId(a.where.cloneId))
                 w.cloneId = toId(a.where.cloneId);
-            return RuntimeExecutionModel.countDocuments(w);
+            return models_1.RuntimeExecutionModel.countDocuments(w);
         },
     },
     runtimeSchedule: {
         create: async (a) => {
-            const { RuntimeScheduleModel } = await Promise.resolve().then(() => __importStar(require("./models")));
-            return N(RuntimeScheduleModel.create(ensureIds(a.data)));
+            return N(models_1.RuntimeScheduleModel.create(ensureIds(a.data)));
         },
         createMany: async (a) => {
-            const { RuntimeScheduleModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const docs = (a.data || []).map(ensureIds);
-            return RuntimeScheduleModel.insertMany(docs, { ordered: false });
+            return models_1.RuntimeScheduleModel.insertMany(docs, { ordered: false });
         },
         findMany: async (a) => {
-            const { RuntimeScheduleModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId) {
                 if (!isObjectId(a.where.companyId))
@@ -1144,14 +1089,13 @@ exports.prisma = {
                 else
                     w.nextRunAt = a.where.nextRunAt;
             }
-            let q = RuntimeScheduleModel.find(w);
+            let q = models_1.RuntimeScheduleModel.find(w);
             q = applySort(q, a?.orderBy, { nextRunAt: 1 });
             if (a?.take)
                 q = q.limit(a.take);
             return N(q);
         },
         findFirst: async (a) => {
-            const { RuntimeScheduleModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.id && isObjectId(a.where.id))
                 w._id = toId(a.where.id);
@@ -1159,31 +1103,27 @@ exports.prisma = {
                 w.companyId = toId(a.where.companyId);
             if (a?.where?.cloneId && isObjectId(a.where.cloneId))
                 w.cloneId = toId(a.where.cloneId);
-            return N(RuntimeScheduleModel.findOne(w));
+            return N(models_1.RuntimeScheduleModel.findOne(w));
         },
         update: async (a) => {
-            const { RuntimeScheduleModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (!isObjectId(a.where?.id))
                 return null;
-            return N(RuntimeScheduleModel.findByIdAndUpdate(toId(a.where.id), a.data, { new: true }));
+            return N(models_1.RuntimeScheduleModel.findByIdAndUpdate(toId(a.where.id), a.data, { new: true }));
         },
         deleteMany: async (a) => {
-            const { RuntimeScheduleModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.cloneId && isObjectId(a.where.cloneId))
                 w.cloneId = toId(a.where.cloneId);
             if (a?.where?.companyId && isObjectId(a.where.companyId))
                 w.companyId = toId(a.where.companyId);
-            return RuntimeScheduleModel.deleteMany(w);
+            return models_1.RuntimeScheduleModel.deleteMany(w);
         },
     },
     runtimeCommitment: {
         create: async (a) => {
-            const { RuntimeCommitmentModel } = await Promise.resolve().then(() => __importStar(require("./models")));
-            return N(RuntimeCommitmentModel.create(ensureIds(a.data)));
+            return N(models_1.RuntimeCommitmentModel.create(ensureIds(a.data)));
         },
         findMany: async (a) => {
-            const { RuntimeCommitmentModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId) {
                 if (!isObjectId(a.where.companyId))
@@ -1207,7 +1147,7 @@ exports.prisma = {
                 else
                     w.dueAt = a.where.dueAt;
             }
-            let q = RuntimeCommitmentModel.find(w);
+            let q = models_1.RuntimeCommitmentModel.find(w);
             if (a?.include?.clone)
                 q = q.populate({ path: "cloneId", select: "name role avatarUrl" });
             q = applySort(q, a?.orderBy, { dueAt: 1, createdAt: -1 });
@@ -1216,7 +1156,6 @@ exports.prisma = {
             return N(q);
         },
         findFirst: async (a) => {
-            const { RuntimeCommitmentModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.id && isObjectId(a.where.id))
                 w._id = toId(a.where.id);
@@ -1224,16 +1163,14 @@ exports.prisma = {
                 w.companyId = toId(a.where.companyId);
             if (a?.where?.cloneId && isObjectId(a.where.cloneId))
                 w.cloneId = toId(a.where.cloneId);
-            return N(RuntimeCommitmentModel.findOne(w));
+            return N(models_1.RuntimeCommitmentModel.findOne(w));
         },
         update: async (a) => {
-            const { RuntimeCommitmentModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (!isObjectId(a.where?.id))
                 return null;
-            return N(RuntimeCommitmentModel.findByIdAndUpdate(toId(a.where.id), a.data, { new: true }));
+            return N(models_1.RuntimeCommitmentModel.findByIdAndUpdate(toId(a.where.id), a.data, { new: true }));
         },
         updateMany: async (a) => {
-            const { RuntimeCommitmentModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId && isObjectId(a.where.companyId))
                 w.companyId = toId(a.where.companyId);
@@ -1241,10 +1178,9 @@ exports.prisma = {
                 w.cloneId = toId(a.where.cloneId);
             if (a?.where?.status)
                 w.status = a.where.status;
-            return RuntimeCommitmentModel.updateMany(w, a.data);
+            return models_1.RuntimeCommitmentModel.updateMany(w, a.data);
         },
         count: async (a) => {
-            const { RuntimeCommitmentModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId && isObjectId(a.where.companyId))
                 w.companyId = toId(a.where.companyId);
@@ -1256,16 +1192,14 @@ exports.prisma = {
                 else
                     w.status = a.where.status;
             }
-            return RuntimeCommitmentModel.countDocuments(w);
+            return models_1.RuntimeCommitmentModel.countDocuments(w);
         },
     },
     runtimeEscalation: {
         create: async (a) => {
-            const { RuntimeEscalationModel } = await Promise.resolve().then(() => __importStar(require("./models")));
-            return N(RuntimeEscalationModel.create(ensureIds(a.data)));
+            return N(models_1.RuntimeEscalationModel.create(ensureIds(a.data)));
         },
         findMany: async (a) => {
-            const { RuntimeEscalationModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId) {
                 if (!isObjectId(a.where.companyId))
@@ -1281,7 +1215,7 @@ exports.prisma = {
                 w.status = a.where.status;
             if (a?.where?.severity)
                 w.severity = a.where.severity;
-            let q = RuntimeEscalationModel.find(w);
+            let q = models_1.RuntimeEscalationModel.find(w);
             if (a?.include?.clone)
                 q = q.populate({ path: "cloneId", select: "name role avatarUrl" });
             q = applySort(q, a?.orderBy, { createdAt: -1 });
@@ -1290,7 +1224,6 @@ exports.prisma = {
             return N(q);
         },
         findFirst: async (a) => {
-            const { RuntimeEscalationModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.id && isObjectId(a.where.id))
                 w._id = toId(a.where.id);
@@ -1298,47 +1231,149 @@ exports.prisma = {
                 w.companyId = toId(a.where.companyId);
             if (a?.where?.cloneId && isObjectId(a.where.cloneId))
                 w.cloneId = toId(a.where.cloneId);
-            return N(RuntimeEscalationModel.findOne(w));
+            return N(models_1.RuntimeEscalationModel.findOne(w));
         },
         update: async (a) => {
-            const { RuntimeEscalationModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             if (!isObjectId(a.where?.id))
                 return null;
-            return N(RuntimeEscalationModel.findByIdAndUpdate(toId(a.where.id), a.data, { new: true }));
+            return N(models_1.RuntimeEscalationModel.findByIdAndUpdate(toId(a.where.id), a.data, { new: true }));
         },
         count: async (a) => {
-            const { RuntimeEscalationModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId && isObjectId(a.where.companyId))
                 w.companyId = toId(a.where.companyId);
             if (a?.where?.status)
                 w.status = a.where.status;
-            return RuntimeEscalationModel.countDocuments(w);
+            return models_1.RuntimeEscalationModel.countDocuments(w);
         },
     },
     compiledRuntimeState: {
         upsert: async (a) => {
-            const { CompiledRuntimeStateModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const filter = {};
             if (a.where?.cloneId && isObjectId(a.where.cloneId))
                 filter.cloneId = toId(a.where.cloneId);
-            return N(CompiledRuntimeStateModel.findOneAndUpdate(filter, ensureIds({ ...a.update, ...a.create }), { upsert: true, new: true }));
+            return N(models_1.CompiledRuntimeStateModel.findOneAndUpdate(filter, ensureIds({ ...a.update, ...a.create }), { upsert: true, new: true }));
         },
         findFirst: async (a) => {
-            const { CompiledRuntimeStateModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.cloneId && isObjectId(a.where.cloneId))
                 w.cloneId = toId(a.where.cloneId);
             if (a?.where?.companyId && isObjectId(a.where.companyId))
                 w.companyId = toId(a.where.companyId);
-            return N(CompiledRuntimeStateModel.findOne(w));
+            return N(models_1.CompiledRuntimeStateModel.findOne(w));
         },
         findMany: async (a) => {
-            const { CompiledRuntimeStateModel } = await Promise.resolve().then(() => __importStar(require("./models")));
             const w = {};
             if (a?.where?.companyId && isObjectId(a.where.companyId))
                 w.companyId = toId(a.where.companyId);
-            return N(CompiledRuntimeStateModel.find(w));
+            return N(models_1.CompiledRuntimeStateModel.find(w));
+        },
+    },
+    // ─── Workflow ──────────────────────────────────────────────────────────────
+    workflow: {
+        create: async (a) => {
+            const { steps, ...rest } = a.data;
+            const wf = await models_1.WorkflowModel.create(ensureIds(rest));
+            if (steps?.create && steps.create.length > 0) {
+                const stepDocs = steps.create.map((s) => ensureIds({ ...s, workflowId: wf._id, companyId: wf.companyId }));
+                await models_1.WorkflowStepModel.insertMany(stepDocs);
+            }
+            const populated = await N(models_1.WorkflowModel.findById(wf._id));
+            const stepList = await N(models_1.WorkflowStepModel.find({ workflowId: wf._id }).sort({ stepOrder: 1 }));
+            if (populated)
+                populated.steps = stepList;
+            return populated;
+        },
+        findMany: async (a) => {
+            const w = {};
+            if (a?.where?.companyId) {
+                if (!isObjectId(a.where.companyId))
+                    return [];
+                w.companyId = toId(a.where.companyId);
+            }
+            let q = models_1.WorkflowModel.find(w);
+            q = applySort(q, a?.orderBy, { createdAt: -1 });
+            if (a?.take)
+                q = q.limit(a.take);
+            const rawDocs = await q;
+            const workflows = (rawDocs || []).map((d) => {
+                try {
+                    return d?.toObject ? d.toObject({ virtuals: true }) : d;
+                }
+                catch {
+                    return d;
+                }
+            });
+            if (a?.include?.steps) {
+                for (const wf of workflows) {
+                    const sid = wf?.id || wf?._id?.toString();
+                    if (sid)
+                        wf.steps = await N(models_1.WorkflowStepModel.find({ workflowId: toId(sid) }).sort({ stepOrder: 1 }));
+                }
+            }
+            return workflows;
+        },
+        findFirst: async (a) => {
+            const w = {};
+            if (a?.where?.id && isObjectId(a.where.id))
+                w._id = toId(a.where.id);
+            if (a?.where?.companyId && isObjectId(a.where.companyId))
+                w.companyId = toId(a.where.companyId);
+            const wf = await N(models_1.WorkflowModel.findOne(w));
+            if (!wf)
+                return null;
+            if (a?.include?.steps) {
+                const wfId = wf?.id || wf?._id?.toString();
+                if (wfId)
+                    wf.steps = await N(models_1.WorkflowStepModel.find({ workflowId: toId(wfId) }).sort({ stepOrder: 1 }));
+            }
+            return wf;
+        },
+        update: async (a) => {
+            if (!isObjectId(a.where?.id))
+                return null;
+            const data = ensureIds(a.data);
+            return N(models_1.WorkflowModel.findByIdAndUpdate(toId(a.where.id), data, { new: true }));
+        },
+        delete: async (a) => {
+            if (!isObjectId(a.where?.id))
+                return null;
+            await models_1.WorkflowStepModel.deleteMany({ workflowId: toId(a.where.id) });
+            return N(models_1.WorkflowModel.findByIdAndDelete(toId(a.where.id)));
+        },
+        updateMany: async (a) => {
+            const w = {};
+            if (a?.where?.companyId && isObjectId(a.where.companyId))
+                w.companyId = toId(a.where.companyId);
+            if (a?.where?.id && isObjectId(a.where.id))
+                w._id = toId(a.where.id);
+            return models_1.WorkflowModel.updateMany(w, a.data);
+        },
+    },
+    workflowStep: {
+        create: async (a) => {
+            return N(models_1.WorkflowStepModel.create(ensureIds(a.data)));
+        },
+        findMany: async (a) => {
+            const w = {};
+            if (a?.where?.workflowId && isObjectId(a.where.workflowId))
+                w.workflowId = toId(a.where.workflowId);
+            if (a?.where?.companyId && isObjectId(a.where.companyId))
+                w.companyId = toId(a.where.companyId);
+            let q = models_1.WorkflowStepModel.find(w);
+            q = applySort(q, a?.orderBy, { stepOrder: 1 });
+            return N(q);
+        },
+        update: async (a) => {
+            if (!isObjectId(a.where?.id))
+                return null;
+            return N(models_1.WorkflowStepModel.findByIdAndUpdate(toId(a.where.id), a.data, { new: true }));
+        },
+        deleteMany: async (a) => {
+            const w = {};
+            if (a?.where?.workflowId && isObjectId(a.where.workflowId))
+                w.workflowId = toId(a.where.workflowId);
+            return models_1.WorkflowStepModel.deleteMany(w);
         },
     },
 };

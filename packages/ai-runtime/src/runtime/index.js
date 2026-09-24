@@ -14,10 +14,16 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+// Runtime Engine — full public surface
 __exportStar(require("./types"), exports);
-__exportStar(require("./state-machine"), exports);
-__exportStar(require("./sanitizer"), exports);
-__exportStar(require("./memory-engine"), exports);
-__exportStar(require("./orchestrator"), exports);
-__exportStar(require("./runtime"), exports);
+__exportStar(require("./compiler"), exports);
+__exportStar(require("./authority"), exports);
+__exportStar(require("./scheduler"), exports);
+__exportStar(require("./event-router"), exports);
+__exportStar(require("./delegation"), exports);
+__exportStar(require("./commitments"), exports);
+__exportStar(require("./escalation"), exports);
+__exportStar(require("./memory-connector"), exports);
+__exportStar(require("./llm-client"), exports);
+__exportStar(require("./engine"), exports);
 //# sourceMappingURL=index.js.map

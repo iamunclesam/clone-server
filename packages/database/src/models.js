@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CompiledRuntimeStateModel = exports.RuntimeEscalationModel = exports.RuntimeCommitmentModel = exports.RuntimeScheduleModel = exports.RuntimeExecutionModel = exports.RuntimeActionModel = exports.RuntimeTriggerModel = exports.RuntimeEventModel = exports.ConversationMessageModel = exports.ConversationModel = exports.AuditLogModel = exports.OAuthStateModel = exports.ChannelMessageModel = exports.ChannelModel = exports.ActivityLogModel = exports.EmployeeMemoryModel = exports.ApprovalRequestModel = exports.TaskModel = exports.AIEmployeeModel = exports.ConnectedAccountModel = exports.TeamModel = exports.MembershipModel = exports.CompanyModel = exports.UserModel = exports.EscalationStatus = exports.EscalationSeverity = exports.CommitmentStatus = exports.RuntimeExecutionStatus = exports.TriggerType = exports.ApprovalStatus = exports.RiskLevel = exports.TaskPriority = exports.TaskStatus = exports.EmployeeStatus = exports.Role = void 0;
+exports.CompiledRuntimeStateModel = exports.RuntimeEscalationModel = exports.RuntimeCommitmentModel = exports.RuntimeScheduleModel = exports.RuntimeExecutionModel = exports.RuntimeActionModel = exports.RuntimeTriggerModel = exports.RuntimeEventModel = exports.ConversationMessageModel = exports.ConversationModel = exports.AuditLogModel = exports.OAuthStateModel = exports.ChannelMessageModel = exports.ChannelModel = exports.ActivityLogModel = exports.EmployeeMemoryModel = exports.ApprovalRequestModel = exports.TaskModel = exports.AIEmployeeModel = exports.ConnectedAccountModel = exports.TeamModel = exports.MembershipModel = exports.CompanyModel = exports.UserModel = exports.WorkflowStepModel = exports.WorkflowModel = exports.EscalationStatus = exports.EscalationSeverity = exports.CommitmentStatus = exports.RuntimeExecutionStatus = exports.TriggerType = exports.ApprovalStatus = exports.RiskLevel = exports.TaskPriority = exports.TaskStatus = exports.EmployeeStatus = exports.Role = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 // Enums
 var Role;
@@ -476,7 +476,41 @@ const CompiledRuntimeStateSchema = new mongoose_1.Schema({
     connectedProviders: [String],
 }, { timestamps: true });
 CompiledRuntimeStateSchema.index({ companyId: 1 });
+// ─── 25. Workflow ─────────────────────────────────────────────────────────────
+const WorkflowSchema = new mongoose_1.Schema({
+    companyId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Company", required: true },
+    name: { type: String, required: true },
+    description: { type: String },
+    triggerType: {
+        type: String,
+        enum: ["EMAIL", "GITHUB_ISSUE", "LINEAR_ISSUE", "SLACK_MESSAGE", "SCHEDULE", "WEBHOOK", "MANUAL"],
+        default: "MANUAL",
+    },
+    isActive: { type: Boolean, default: true },
+    lastRunAt: { type: Date },
+    runCount: { type: Number, default: 0 },
+    // Canvas layout serialised as JSON (nodes + edges from React Flow)
+    canvasJson: { type: mongoose_1.Schema.Types.Mixed },
+}, { timestamps: true });
+WorkflowSchema.index({ companyId: 1, createdAt: -1 });
+// ─── 26. WorkflowStep ─────────────────────────────────────────────────────────
+const WorkflowStepSchema = new mongoose_1.Schema({
+    companyId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Company", required: true },
+    workflowId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Workflow", required: true },
+    stepOrder: { type: Number, required: true },
+    employeeId: { type: mongoose_1.Schema.Types.ObjectId, ref: "AIEmployee" },
+    actionType: {
+        type: String,
+        enum: ["FETCH_CONTEXT", "PLAN", "EXECUTE_TOOL", "HUMAN_APPROVAL", "NOTIFY_SLACK", "SEND_EMAIL"],
+        required: true,
+    },
+    configJson: { type: String },
+    status: { type: String, enum: ["PENDING", "RUNNING", "COMPLETED", "FAILED", "SKIPPED"], default: "PENDING" },
+}, { timestamps: true });
+WorkflowStepSchema.index({ workflowId: 1, stepOrder: 1 });
 // Export Models
+exports.WorkflowModel = mongoose_1.default.models.Workflow || mongoose_1.default.model("Workflow", WorkflowSchema);
+exports.WorkflowStepModel = mongoose_1.default.models.WorkflowStep || mongoose_1.default.model("WorkflowStep", WorkflowStepSchema);
 exports.UserModel = mongoose_1.default.models.User || mongoose_1.default.model("User", UserSchema);
 exports.CompanyModel = mongoose_1.default.models.Company || mongoose_1.default.model("Company", CompanySchema);
 exports.MembershipModel = mongoose_1.default.models.Membership || mongoose_1.default.model("Membership", MembershipSchema);
