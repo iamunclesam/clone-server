@@ -9,6 +9,7 @@
     "dev:web": "npm --prefix apps/web run dev",
     "build": "npm run build:packages && npm --prefix apps/api run build && npm --prefix apps/web run build",
     "build:api": "npm run build:packages && npm --prefix apps/api run build",
+    "build:web": "npm run build:packages && npm --prefix apps/web run build",
     "start:api": "node apps/api/dist/apps/api/src/server.js",
     "build:packages": "npm --prefix packages/database run build && npm --prefix packages/integration-framework run build && npm --prefix packages/ai-runtime run build && npm --prefix packages/workspace-provider run build",
     "test": "vitest run",
