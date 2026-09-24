@@ -231,7 +231,7 @@ export default function NewEmployeePage() {
               disabled={loading}
               className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
             >
-              {loading ? "Deploying Employee..." : `⚡ Deploy AI Employee (${name})`}
+              {loading ? "Deploying Employee..." : ` Deploy AI Employee (${name})`}
             </button>
           </div>
         </div>
