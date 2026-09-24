@@ -22,7 +22,10 @@ import { channelsRoutes } from "./modules/channels/channels.routes";
 import { runtimeRoutes } from "./modules/runtime/runtime.routes";
 
 const PORT = Number(process.env.PORT) || 4000;
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "http://localhost:3000").split(",");
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "http://localhost:3000")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
 
 export async function buildApp() {
   const app = Fastify({
