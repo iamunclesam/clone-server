@@ -1,4 +1,11 @@
-const API_BASE = process.env.NEXT_API_URL || "http://localhost:4000/api/v1";
+function getApiBaseUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_API_URL;
+  if (!envUrl) return "http://localhost:4000/api/v1";
+  const trimmed = envUrl.trim().replace(/\/+$/, "");
+  return trimmed.endsWith("/api/v1") ? trimmed : `${trimmed}/api/v1`;
+}
+
+const API_BASE = getApiBaseUrl();
 
 export interface User {
   id: string;

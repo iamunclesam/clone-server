@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api, Team, AIEmployee } from "@/lib/api";
 
-const API_BASE = process.env.NEXT_API_URL || "http://localhost:4000/api/v1";
+const RAW_API = (process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_API_URL || "http://localhost:4000/api/v1").trim().replace(/\/+$/, "");
+const API_BASE = RAW_API.endsWith("/api/v1") ? RAW_API : `${RAW_API}/api/v1`;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

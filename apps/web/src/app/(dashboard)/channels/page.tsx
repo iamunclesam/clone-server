@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { api, Channel, ChannelMessage, AIEmployee, Team } from "@/lib/api";
 
-const API_BASE = process.env.NEXT_API_URL || "http://localhost:4000/api/v1";
+const RAW_API = (process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_API_URL || "http://localhost:4000/api/v1").trim().replace(/\/+$/, "");
+const API_BASE = RAW_API.endsWith("/api/v1") ? RAW_API : `${RAW_API}/api/v1`;
 
 const MSG_BADGES: Record<string, { label: string; cls: string }> = {
   DISCUSSION: { label: "Chat", cls: "bg-slate-100 text-slate-600 border-slate-200" },
