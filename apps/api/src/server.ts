@@ -55,13 +55,13 @@ export async function buildApp() {
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
   });
 
-  // Cookies — HttpOnly, Secure, SameSite=Strict
+  // Cookies — HttpOnly, Secure, SameSite=None (cross-origin: Vercel ↔ Render)
   await app.register(fastifyCookie, {
     secret: process.env.COOKIE_SECRET || "change-me-in-production",
     parseOptions: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       path: "/",
     },
   });

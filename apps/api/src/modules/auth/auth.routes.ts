@@ -56,7 +56,7 @@ export async function authRoutes(app: FastifyInstance) {
     reply.setCookie("session", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     });
@@ -93,7 +93,7 @@ export async function authRoutes(app: FastifyInstance) {
     reply.setCookie("session", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     });
