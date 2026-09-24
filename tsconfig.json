@@ -1,24 +1,31 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "jsx": "react-jsx",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
+
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
+
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+
     "paths": {
-      "@clone/database": ["packages/database/src/index.ts"],
-      "@clone/integration-framework": ["packages/integration-framework/src/index.ts"],
-      "@clone/ai-runtime": ["packages/ai-runtime/src/index.ts"],
-      "@clone/workspace-provider": ["packages/workspace-provider/src/index.ts"]
+      "@clone/database": ["./packages/database/src/index.ts"],
+      "@clone/integration-framework": ["./packages/integration-framework/src/index.ts"],
+      "@clone/ai-runtime": ["./packages/ai-runtime/src/index.ts"],
+      "@clone/workspace-provider": ["./packages/workspace-provider/src/index.ts"]
     }
   },
-  "exclude": ["node_modules", "dist", ".next", "apps/web"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".next",
+    "apps/web"
+  ]
 }
