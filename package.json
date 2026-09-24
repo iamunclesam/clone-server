@@ -20,10 +20,11 @@
     "db:seed": "npm --prefix packages/database run seed"
   },
   "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "@types/node": "^26.6.2",
     "concurrently": "^8.2.2",
     "typescript": "^5.4.5",
-    "vitest": "^1.6.0",
-    "@playwright/test": "^1.44.0"
+    "vitest": "^1.6.0"
   },
   "workspaces": [
     "apps/*",

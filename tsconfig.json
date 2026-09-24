@@ -5,15 +5,18 @@
     "moduleResolution": "Node16",
 
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+
+    "jsx": "react-jsx",
+
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
 
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
 
     "paths": {
       "@clone/database": ["./packages/database/src/index.ts"],
