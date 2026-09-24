@@ -1,11 +1,11 @@
 {
   "name": "@clone/api",
   "version": "1.0.0",
-  "main": "dist/server.js",
+  "main": "dist/apps/api/src/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/apps/api/src/server.js"
   },
   "dependencies": {
     "@clone/ai-runtime": "file:../../packages/ai-runtime",
