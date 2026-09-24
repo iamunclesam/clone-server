@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+const API_BASE = process.env.NEXT_API_URL || "http://localhost:4000/api/v1";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -248,7 +248,7 @@ export default function CloneRuntimePage() {
         setTriggers(r.data.triggers || []);
         setActions(r.data.actions || []);
       }
-    } catch {/* silent */} finally {
+    } catch {/* silent */ } finally {
       setLoading(false);
     }
   }, [companyId, cloneId, base]);
@@ -306,7 +306,7 @@ export default function CloneRuntimePage() {
   const TABS: { id: TabId; label: string; count?: number }[] = [
     { id: "executions", label: "Executions", count: executions.length },
     { id: "schedules", label: "Schedules", count: schedules.length },
-    { id: "commitments", label: "Commitments", count: commitments.filter((c) => ["OPEN","IN_PROGRESS","BLOCKED","OVERDUE"].includes(c.status)).length },
+    { id: "commitments", label: "Commitments", count: commitments.filter((c) => ["OPEN", "IN_PROGRESS", "BLOCKED", "OVERDUE"].includes(c.status)).length },
     { id: "runtime", label: "Compiled Runtime" },
   ];
 
@@ -413,11 +413,10 @@ export default function CloneRuntimePage() {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`px-4 py-2.5 text-[12px] font-semibold flex items-center gap-1.5 border-b-2 transition-colors -mb-px ${
-              tab === t.id
+            className={`px-4 py-2.5 text-[12px] font-semibold flex items-center gap-1.5 border-b-2 transition-colors -mb-px ${tab === t.id
                 ? "border-slate-900 text-slate-900"
                 : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
+              }`}
           >
             {t.label}
             {t.count !== undefined && t.count > 0 && (

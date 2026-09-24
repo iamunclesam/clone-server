@@ -4,14 +4,14 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { api, Channel, ChannelMessage, AIEmployee, Team } from "@/lib/api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+const API_BASE = process.env.NEXT_API_URL || "http://localhost:4000/api/v1";
 
 const MSG_BADGES: Record<string, { label: string; cls: string }> = {
-  DISCUSSION:    { label: "Chat",       cls: "bg-slate-100 text-slate-600 border-slate-200" },
-  TASK_REQUEST:  { label: "Task",       cls: "bg-amber-50 text-amber-700 border-amber-200" },
-  DELEGATION:    { label: "Delegation", cls: "bg-purple-50 text-purple-700 border-purple-200" },
-  DECISION:      { label: "Decision",  cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  STATUS_UPDATE: { label: "Status",    cls: "bg-blue-50 text-blue-700 border-blue-200" },
+  DISCUSSION: { label: "Chat", cls: "bg-slate-100 text-slate-600 border-slate-200" },
+  TASK_REQUEST: { label: "Task", cls: "bg-amber-50 text-amber-700 border-amber-200" },
+  DELEGATION: { label: "Delegation", cls: "bg-purple-50 text-purple-700 border-purple-200" },
+  DECISION: { label: "Decision", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  STATUS_UPDATE: { label: "Status", cls: "bg-blue-50 text-blue-700 border-blue-200" },
 };
 
 function initials(name: string) {
@@ -35,22 +35,22 @@ export default function ChannelsPage() {
   const { activeCompany, user } = useAuth();
   const companyId = activeCompany?.id;
 
-  const [channels, setChannels]               = useState<Channel[]>([]);
-  const [employees, setEmployees]             = useState<AIEmployee[]>([]);
-  const [teams, setTeams]                     = useState<Team[]>([]);
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [employees, setEmployees] = useState<AIEmployee[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
-  const [messages, setMessages]               = useState<ChannelMessage[]>([]);
-  const [loading, setLoading]                 = useState(true);
-  const [sending, setSending]                 = useState(false);
+  const [messages, setMessages] = useState<ChannelMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
 
   // composer
   const [senderMode, setSenderMode] = useState<"human" | string>("human");
   const [inputContent, setInputContent] = useState("");
-  const [msgType, setMsgType] = useState<"DISCUSSION"|"TASK_REQUEST"|"DELEGATION"|"DECISION"|"STATUS_UPDATE">("DISCUSSION");
+  const [msgType, setMsgType] = useState<"DISCUSSION" | "TASK_REQUEST" | "DELEGATION" | "DECISION" | "STATUS_UPDATE">("DISCUSSION");
   const [mentionId, setMentionId] = useState("");
 
   const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef  = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // ── load data ────────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -62,9 +62,9 @@ export default function ChannelsPage() {
         api.getEmployees(companyId),
         api.getTeams(companyId),
       ]);
-      const fetchedTeams     = teamRes.teams    || [];
+      const fetchedTeams = teamRes.teams || [];
       const fetchedEmployees = empRes.employees || [];
-      let   fetchedChannels  = chRes.channels   || [];
+      let fetchedChannels = chRes.channels || [];
 
       // Auto-create a dedicated channel for each team that doesn't have one
       for (const team of fetchedTeams) {
@@ -167,9 +167,9 @@ export default function ChannelsPage() {
   const activeTeam = teams.find((t) => t.id === activeTeamId);
   const channelMembers = activeTeam?.members || (Array.isArray(activeChannel?.members) ? (activeChannel!.members as any[]) : []);
 
-  const teamChannels  = channels.filter((c) => c.type === "TEAM");
+  const teamChannels = channels.filter((c) => c.type === "TEAM");
   const crossChannels = channels.filter((c) => c.type === "CROSS_TEAM");
-  const directChannels= channels.filter((c) => c.type === "DIRECT");
+  const directChannels = channels.filter((c) => c.type === "DIRECT");
 
   // Group messages by day
   type MsgGroup = { day: string; msgs: ChannelMessage[] };
@@ -203,9 +203,8 @@ export default function ChannelsPage() {
                 const active = ch.id === activeChannelId;
                 return (
                   <button key={ch.id} onClick={() => setActiveChannelId(ch.id)}
-                    className={`w-full text-left px-2.5 py-1.5 flex items-center gap-2 text-[12px] font-mono transition-colors cursor-pointer ${
-                      active ? "bg-slate-700 text-white font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-                    }`}>
+                    className={`w-full text-left px-2.5 py-1.5 flex items-center gap-2 text-[12px] font-mono transition-colors cursor-pointer ${active ? "bg-slate-700 text-white font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                      }`}>
                     <span className="text-slate-500 shrink-0">#</span>
                     <span className="truncate flex-1">{ch.name}</span>
                     {team && <span className="text-[9px] text-slate-600 shrink-0">{team.memberCount}</span>}
@@ -221,9 +220,8 @@ export default function ChannelsPage() {
               <p className="px-2 mb-1 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Cross-Team</p>
               {crossChannels.map((ch) => (
                 <button key={ch.id} onClick={() => setActiveChannelId(ch.id)}
-                  className={`w-full text-left px-2.5 py-1.5 flex items-center gap-2 text-[12px] font-mono transition-colors cursor-pointer ${
-                    ch.id === activeChannelId ? "bg-slate-700 text-white font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-                  }`}>
+                  className={`w-full text-left px-2.5 py-1.5 flex items-center gap-2 text-[12px] font-mono transition-colors cursor-pointer ${ch.id === activeChannelId ? "bg-slate-700 text-white font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                    }`}>
                   <span className="text-slate-500 shrink-0">⇄</span>
                   <span className="truncate">{ch.name}</span>
                 </button>
@@ -237,9 +235,8 @@ export default function ChannelsPage() {
               <p className="px-2 mb-1 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Direct</p>
               {directChannels.map((ch) => (
                 <button key={ch.id} onClick={() => setActiveChannelId(ch.id)}
-                  className={`w-full text-left px-2.5 py-1.5 flex items-center gap-2 text-[12px] font-mono transition-colors cursor-pointer ${
-                    ch.id === activeChannelId ? "bg-slate-700 text-white font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-                  }`}>
+                  className={`w-full text-left px-2.5 py-1.5 flex items-center gap-2 text-[12px] font-mono transition-colors cursor-pointer ${ch.id === activeChannelId ? "bg-slate-700 text-white font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                    }`}>
                   <span className="text-slate-500 shrink-0">●</span>
                   <span className="truncate">{ch.name}</span>
                 </button>
@@ -252,10 +249,9 @@ export default function ChannelsPage() {
             <p className="px-2 mb-1 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Clones</p>
             {employees.map((emp) => (
               <div key={emp.id} className="px-2.5 py-1 flex items-center gap-2">
-                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                  emp.status === "WORKING" ? "bg-blue-400 animate-pulse" :
-                  emp.status === "ACTIVE"  ? "bg-emerald-400" : "bg-slate-600"
-                }`} />
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${emp.status === "WORKING" ? "bg-blue-400 animate-pulse" :
+                    emp.status === "ACTIVE" ? "bg-emerald-400" : "bg-slate-600"
+                  }`} />
                 <span className="text-[11px] font-mono text-slate-400 truncate">{emp.name}</span>
               </div>
             ))}
@@ -327,12 +323,12 @@ export default function ChannelsPage() {
                   </div>
 
                   {msgs.map((msg, i) => {
-                    const sender: any  = msg.senderId || {};
-                    const badge        = MSG_BADGES[msg.messageType] || MSG_BADGES.DISCUSSION;
-                    const content      = typeof msg.content === "string" ? msg.content : "";
-                    const isHuman      = content.startsWith("[") && content.includes("]: ");
-                    const humanName    = isHuman ? content.match(/^\[([^\]]+)\]/)?.[1] || "You" : null;
-                    const displayText  = isHuman ? content.replace(/^\[[^\]]+\]:\s/, "") : content;
+                    const sender: any = msg.senderId || {};
+                    const badge = MSG_BADGES[msg.messageType] || MSG_BADGES.DISCUSSION;
+                    const content = typeof msg.content === "string" ? msg.content : "";
+                    const isHuman = content.startsWith("[") && content.includes("]: ");
+                    const humanName = isHuman ? content.match(/^\[([^\]]+)\]/)?.[1] || "You" : null;
+                    const displayText = isHuman ? content.replace(/^\[[^\]]+\]:\s/, "") : content;
                     const mentions: any[] = Array.isArray(msg.mentions) ? msg.mentions : [];
 
                     // Compact: same sender, same day, not human
@@ -352,9 +348,8 @@ export default function ChannelsPage() {
                             </span>
                           </div>
                         ) : (
-                          <div className={`w-8 h-8 flex items-center justify-center text-[11px] font-bold font-mono shrink-0 ${
-                            isHuman ? "bg-blue-600 text-white" : "bg-slate-800 text-white"
-                          }`}>
+                          <div className={`w-8 h-8 flex items-center justify-center text-[11px] font-bold font-mono shrink-0 ${isHuman ? "bg-blue-600 text-white" : "bg-slate-800 text-white"
+                            }`}>
                             {isHuman ? initials(humanName || "You") : initials(sender.name || "?")}
                           </div>
                         )}
@@ -382,9 +377,8 @@ export default function ChannelsPage() {
                           )}
 
                           {/* Content */}
-                          <p className={`text-[13px] leading-relaxed whitespace-pre-wrap break-words ${
-                            isHuman ? "text-blue-800" : "text-slate-800"
-                          }`}>
+                          <p className={`text-[13px] leading-relaxed whitespace-pre-wrap break-words ${isHuman ? "text-blue-800" : "text-slate-800"
+                            }`}>
                             {displayText}
                           </p>
 
@@ -511,10 +505,9 @@ export default function ChannelsPage() {
                     <div className="w-7 h-7 bg-slate-800 text-white text-[10px] font-bold font-mono flex items-center justify-center">
                       {initials(m.name)}
                     </div>
-                    <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white ${
-                      (full?.status || "ACTIVE") === "WORKING" ? "bg-blue-400 animate-pulse" :
-                      (full?.status || "ACTIVE") === "ACTIVE"  ? "bg-emerald-400" : "bg-slate-300"
-                    }`} />
+                    <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white ${(full?.status || "ACTIVE") === "WORKING" ? "bg-blue-400 animate-pulse" :
+                        (full?.status || "ACTIVE") === "ACTIVE" ? "bg-emerald-400" : "bg-slate-300"
+                      }`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[11px] font-semibold text-slate-800 truncate">{m.name}</p>

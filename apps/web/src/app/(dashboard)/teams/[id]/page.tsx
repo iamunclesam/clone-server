@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api, Team, AIEmployee } from "@/lib/api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+const API_BASE = process.env.NEXT_API_URL || "http://localhost:4000/api/v1";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -243,8 +243,8 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
 
   const TABS: { id: Tab; label: string; count?: number }[] = [
     { id: "overview", label: "Overview" },
-    { id: "members",  label: "Members",  count: team?.memberCount },
-    { id: "runtime",  label: "Runtime",  count: executions.length || undefined },
+    { id: "members", label: "Members", count: team?.memberCount },
+    { id: "runtime", label: "Runtime", count: executions.length || undefined },
     { id: "activity", label: "Activity" },
   ];
 
@@ -322,9 +322,8 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
       <div className="flex gap-0 border-b border-slate-200">
         {TABS.map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`px-4 py-2.5 text-[12px] font-semibold flex items-center gap-1.5 border-b-2 transition-colors -mb-px cursor-pointer ${
-              tab === t.id ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}>
+            className={`px-4 py-2.5 text-[12px] font-semibold flex items-center gap-1.5 border-b-2 transition-colors -mb-px cursor-pointer ${tab === t.id ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-700"
+              }`}>
             {t.label}
             {t.count !== undefined && t.count > 0 && (
               <span className="text-[10px] bg-slate-100 text-slate-500 font-mono px-1.5 py-0.5 rounded-full">{t.count}</span>
@@ -343,9 +342,9 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
             {/* Stat cards */}
             <div className="grid grid-cols-3 gap-3">
               {[
-                { label: "Members",     value: team.memberCount, color: "text-slate-900" },
+                { label: "Members", value: team.memberCount, color: "text-slate-900" },
                 { label: "Working now", value: team.members.filter((m) => (memberMap.get(m.id)?.status || m.status) === "WORKING").length, color: "text-blue-600" },
-                { label: "Paused",      value: team.members.filter((m) => (memberMap.get(m.id)?.status || m.status) === "PAUSED").length, color: "text-slate-400" },
+                { label: "Paused", value: team.members.filter((m) => (memberMap.get(m.id)?.status || m.status) === "PAUSED").length, color: "text-slate-400" },
               ].map((s) => (
                 <div key={s.label} className="bg-white border border-slate-200 p-4 text-center">
                   <div className={`text-2xl font-bold font-mono ${s.color}`}>{s.value}</div>
@@ -426,9 +425,9 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
               <h3 className="text-[12px] font-bold text-slate-900 uppercase tracking-wide font-mono mb-4">Team Info</h3>
               <div className="divide-y divide-slate-100 text-[12px] font-mono">
                 {[
-                  ["Name",    team.name],
+                  ["Name", team.name],
                   ["Members", `${team.memberCount}`],
-                  ["Lead",    lead?.name || "Unassigned"],
+                  ["Lead", lead?.name || "Unassigned"],
                   ["Created", team.createdAt ? new Date(team.createdAt).toLocaleDateString() : "—"],
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between py-2">
@@ -444,9 +443,9 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
               <div className="space-y-1.5">
                 {[
                   { label: "+ Add / remove members", action: () => setTab("members") },
-                  { label: "✏️ Edit team settings",   action: () => setEditOpen(true) },
-                  { label: "⚡ View runtime",          action: () => setTab("runtime") },
-                  { label: "📋 Activity logs",         action: () => setTab("activity") },
+                  { label: "✏️ Edit team settings", action: () => setEditOpen(true) },
+                  { label: "⚡ View runtime", action: () => setTab("runtime") },
+                  { label: "📋 Activity logs", action: () => setTab("activity") },
                 ].map((item) => (
                   <button key={item.label} onClick={item.action}
                     className="w-full text-left px-3 py-2 border border-slate-200 hover:bg-slate-50 text-[12px] text-slate-700 font-medium transition-colors cursor-pointer">

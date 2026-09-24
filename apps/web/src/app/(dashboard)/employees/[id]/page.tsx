@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api, AIEmployee, ConnectedAccount, EmployeePermission } from "@/lib/api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+const API_BASE = process.env.NEXT_API_URL || "http://localhost:4000/api/v1";
 const BARK_VOICE_PRESET = "v2/en_speaker_6";
 
 interface BrowserSpeechRecognitionResult {
@@ -32,7 +32,7 @@ interface BrowserSpeechRecognition {
 }
 
 interface BrowserSpeechRecognitionConstructor {
-  new (): BrowserSpeechRecognition;
+  new(): BrowserSpeechRecognition;
 }
 
 declare global {
@@ -74,111 +74,111 @@ const PROVIDER_CATALOG: ProviderDef[] = [
     id: "github", name: "GitHub", category: "Engineering",
     iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg",
     actions: [
-      { id: "github.list_repositories",   label: "List repositories",   description: "List accessible repos",                    write: false, defaultApproval: false, riskLevel: "LOW" },
-      { id: "github.read_repository",     label: "Read repository",     description: "Read files, commits, history",              write: false, defaultApproval: false, riskLevel: "LOW" },
-      { id: "github.create_issue",        label: "Create issue",        description: "Open a GitHub issue",                       write: true,  defaultApproval: false, riskLevel: "LOW" },
-      { id: "github.comment",             label: "Comment on PR/issue", description: "Post a comment",                            write: true,  defaultApproval: false, riskLevel: "LOW" },
-      { id: "github.create_branch",       label: "Create branch",       description: "Create a git branch",                      write: true,  defaultApproval: false, riskLevel: "LOW" },
-      { id: "github.create_pull_request", label: "Open pull request",   description: "Open a PR from a branch",                  write: true,  defaultApproval: true,  riskLevel: "MEDIUM" },
-      { id: "github.review_pull_request", label: "Review PR",           description: "Submit a review on a pull request",        write: true,  defaultApproval: true,  riskLevel: "MEDIUM" },
-      { id: "github.merge_pull_request",  label: "Merge PR",            description: "Merge an approved pull request",           write: true,  defaultApproval: true,  riskLevel: "HIGH" },
-      { id: "github.close_issue",         label: "Close issue",         description: "Close a GitHub issue",                     write: true,  defaultApproval: false, riskLevel: "LOW" },
+      { id: "github.list_repositories", label: "List repositories", description: "List accessible repos", write: false, defaultApproval: false, riskLevel: "LOW" },
+      { id: "github.read_repository", label: "Read repository", description: "Read files, commits, history", write: false, defaultApproval: false, riskLevel: "LOW" },
+      { id: "github.create_issue", label: "Create issue", description: "Open a GitHub issue", write: true, defaultApproval: false, riskLevel: "LOW" },
+      { id: "github.comment", label: "Comment on PR/issue", description: "Post a comment", write: true, defaultApproval: false, riskLevel: "LOW" },
+      { id: "github.create_branch", label: "Create branch", description: "Create a git branch", write: true, defaultApproval: false, riskLevel: "LOW" },
+      { id: "github.create_pull_request", label: "Open pull request", description: "Open a PR from a branch", write: true, defaultApproval: true, riskLevel: "MEDIUM" },
+      { id: "github.review_pull_request", label: "Review PR", description: "Submit a review on a pull request", write: true, defaultApproval: true, riskLevel: "MEDIUM" },
+      { id: "github.merge_pull_request", label: "Merge PR", description: "Merge an approved pull request", write: true, defaultApproval: true, riskLevel: "HIGH" },
+      { id: "github.close_issue", label: "Close issue", description: "Close a GitHub issue", write: true, defaultApproval: false, riskLevel: "LOW" },
     ],
   },
   {
     id: "linear", name: "Linear", category: "Project management",
     iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linear/linear-original.svg",
     actions: [
-      { id: "linear.list_issues",   label: "List issues",    description: "Query and list Linear issues",               write: false, defaultApproval: false, riskLevel: "LOW" },
-      { id: "linear.create_issue",  label: "Create issue",   description: "Create a Linear issue",                      write: true,  defaultApproval: false, riskLevel: "LOW" },
-      { id: "linear.update_issue",  label: "Update issue",   description: "Update status, priority, or assignee",       write: true,  defaultApproval: false, riskLevel: "LOW" },
-      { id: "linear.assign_issue",  label: "Assign issue",   description: "Assign a Linear issue to a team member",     write: true,  defaultApproval: false, riskLevel: "LOW" },
-      { id: "linear.comment_issue", label: "Comment on issue", description: "Add a comment to a Linear issue",          write: true,  defaultApproval: false, riskLevel: "LOW" },
+      { id: "linear.list_issues", label: "List issues", description: "Query and list Linear issues", write: false, defaultApproval: false, riskLevel: "LOW" },
+      { id: "linear.create_issue", label: "Create issue", description: "Create a Linear issue", write: true, defaultApproval: false, riskLevel: "LOW" },
+      { id: "linear.update_issue", label: "Update issue", description: "Update status, priority, or assignee", write: true, defaultApproval: false, riskLevel: "LOW" },
+      { id: "linear.assign_issue", label: "Assign issue", description: "Assign a Linear issue to a team member", write: true, defaultApproval: false, riskLevel: "LOW" },
+      { id: "linear.comment_issue", label: "Comment on issue", description: "Add a comment to a Linear issue", write: true, defaultApproval: false, riskLevel: "LOW" },
     ],
   },
   {
     id: "sentry", name: "Sentry", category: "Monitoring",
     iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/sentry/sentry-original.svg",
     actions: [
-      { id: "sentry.list_issues",   label: "List issues",     description: "List open Sentry issues",                    write: false, defaultApproval: false, riskLevel: "LOW" },
-      { id: "sentry.get_issue",     label: "Get issue",       description: "Fetch full details for a Sentry issue",      write: false, defaultApproval: false, riskLevel: "LOW" },
-      { id: "sentry.get_event",     label: "Get event",       description: "Fetch a specific error event",               write: false, defaultApproval: false, riskLevel: "LOW" },
-      { id: "sentry.resolve_issue", label: "Resolve issue",   description: "Mark a Sentry issue as resolved",            write: true,  defaultApproval: false, riskLevel: "MEDIUM" },
-      { id: "sentry.assign_issue",  label: "Assign issue",    description: "Assign a Sentry issue to a team member",     write: true,  defaultApproval: false, riskLevel: "LOW" },
+      { id: "sentry.list_issues", label: "List issues", description: "List open Sentry issues", write: false, defaultApproval: false, riskLevel: "LOW" },
+      { id: "sentry.get_issue", label: "Get issue", description: "Fetch full details for a Sentry issue", write: false, defaultApproval: false, riskLevel: "LOW" },
+      { id: "sentry.get_event", label: "Get event", description: "Fetch a specific error event", write: false, defaultApproval: false, riskLevel: "LOW" },
+      { id: "sentry.resolve_issue", label: "Resolve issue", description: "Mark a Sentry issue as resolved", write: true, defaultApproval: false, riskLevel: "MEDIUM" },
+      { id: "sentry.assign_issue", label: "Assign issue", description: "Assign a Sentry issue to a team member", write: true, defaultApproval: false, riskLevel: "LOW" },
     ],
   },
   {
     id: "slack", name: "Slack", category: "Communication",
     iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/slack/slack-original.svg",
     actions: [
-      { id: "slack.read_channel",   label: "Read channel",    description: "Read Slack channel message history",         write: false, defaultApproval: false, riskLevel: "LOW" },
-      { id: "slack.send_message",   label: "Send message",    description: "Post a message to a channel",                write: true,  defaultApproval: true,  riskLevel: "MEDIUM" },
-      { id: "slack.send_dm",        label: "Send DM",         description: "Send a direct message to a user",            write: true,  defaultApproval: true,  riskLevel: "MEDIUM" },
-      { id: "slack.create_channel", label: "Create channel",  description: "Create a new Slack channel",                 write: true,  defaultApproval: true,  riskLevel: "MEDIUM" },
+      { id: "slack.read_channel", label: "Read channel", description: "Read Slack channel message history", write: false, defaultApproval: false, riskLevel: "LOW" },
+      { id: "slack.send_message", label: "Send message", description: "Post a message to a channel", write: true, defaultApproval: true, riskLevel: "MEDIUM" },
+      { id: "slack.send_dm", label: "Send DM", description: "Send a direct message to a user", write: true, defaultApproval: true, riskLevel: "MEDIUM" },
+      { id: "slack.create_channel", label: "Create channel", description: "Create a new Slack channel", write: true, defaultApproval: true, riskLevel: "MEDIUM" },
     ],
   },
   {
     id: "gmail", name: "Gmail", category: "Communication",
     iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg",
     actions: [
-      { id: "gmail.read_message",   label: "Read email",      description: "Read inbox messages and threads",            write: false, defaultApproval: false, riskLevel: "LOW" },
-      { id: "gmail.draft_message",  label: "Draft email",     description: "Create an email draft (not sent)",           write: true,  defaultApproval: false, riskLevel: "LOW" },
-      { id: "gmail.send_message",   label: "Send email",      description: "Send an email to a recipient",               write: true,  defaultApproval: true,  riskLevel: "HIGH" },
-      { id: "gmail.label_message",  label: "Label email",     description: "Apply a label to an email thread",           write: true,  defaultApproval: false, riskLevel: "LOW" },
+      { id: "gmail.read_message", label: "Read email", description: "Read inbox messages and threads", write: false, defaultApproval: false, riskLevel: "LOW" },
+      { id: "gmail.draft_message", label: "Draft email", description: "Create an email draft (not sent)", write: true, defaultApproval: false, riskLevel: "LOW" },
+      { id: "gmail.send_message", label: "Send email", description: "Send an email to a recipient", write: true, defaultApproval: true, riskLevel: "HIGH" },
+      { id: "gmail.label_message", label: "Label email", description: "Apply a label to an email thread", write: true, defaultApproval: false, riskLevel: "LOW" },
     ],
   },
   {
     id: "calendar", name: "Google Calendar", category: "Productivity",
     iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg",
     actions: [
-      { id: "calendar.read_events",   label: "Read events",    description: "Read upcoming calendar events",             write: false, defaultApproval: false, riskLevel: "LOW" },
-      { id: "calendar.create_event",  label: "Create event",   description: "Create a new calendar event",               write: true,  defaultApproval: true,  riskLevel: "MEDIUM" },
-      { id: "calendar.update_event",  label: "Update event",   description: "Update an existing calendar event",         write: true,  defaultApproval: true,  riskLevel: "MEDIUM" },
-      { id: "calendar.delete_event",  label: "Delete event",   description: "Delete a calendar event",                   write: true,  defaultApproval: true,  riskLevel: "HIGH" },
+      { id: "calendar.read_events", label: "Read events", description: "Read upcoming calendar events", write: false, defaultApproval: false, riskLevel: "LOW" },
+      { id: "calendar.create_event", label: "Create event", description: "Create a new calendar event", write: true, defaultApproval: true, riskLevel: "MEDIUM" },
+      { id: "calendar.update_event", label: "Update event", description: "Update an existing calendar event", write: true, defaultApproval: true, riskLevel: "MEDIUM" },
+      { id: "calendar.delete_event", label: "Delete event", description: "Delete a calendar event", write: true, defaultApproval: true, riskLevel: "HIGH" },
     ],
   },
   {
     id: "notion", name: "Notion", category: "Productivity",
     iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/notion/notion-original.svg",
     actions: [
-      { id: "notion.search",              label: "Search Notion",        description: "Search across Notion workspace",  write: false, defaultApproval: false, riskLevel: "LOW" },
-      { id: "notion.read_page",           label: "Read page",            description: "Read content from a page",        write: false, defaultApproval: false, riskLevel: "LOW" },
-      { id: "notion.create_page",         label: "Create page",          description: "Create a new Notion page",        write: true,  defaultApproval: false, riskLevel: "LOW" },
-      { id: "notion.update_page",         label: "Update page",          description: "Update content in a page",        write: true,  defaultApproval: false, riskLevel: "LOW" },
-      { id: "notion.create_database_item",label: "Create database item", description: "Add a row to a Notion database",  write: true,  defaultApproval: false, riskLevel: "LOW" },
+      { id: "notion.search", label: "Search Notion", description: "Search across Notion workspace", write: false, defaultApproval: false, riskLevel: "LOW" },
+      { id: "notion.read_page", label: "Read page", description: "Read content from a page", write: false, defaultApproval: false, riskLevel: "LOW" },
+      { id: "notion.create_page", label: "Create page", description: "Create a new Notion page", write: true, defaultApproval: false, riskLevel: "LOW" },
+      { id: "notion.update_page", label: "Update page", description: "Update content in a page", write: true, defaultApproval: false, riskLevel: "LOW" },
+      { id: "notion.create_database_item", label: "Create database item", description: "Add a row to a Notion database", write: true, defaultApproval: false, riskLevel: "LOW" },
     ],
   },
   {
     id: "vercel", name: "Vercel", category: "Deployment",
     iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vercel/vercel-original.svg",
     actions: [
-      { id: "vercel.list_deployments",  label: "List deployments",  description: "List recent Vercel deployments",       write: false, defaultApproval: false, riskLevel: "LOW" },
-      { id: "vercel.get_deployment",    label: "Get deployment",    description: "Get details for a deployment",         write: false, defaultApproval: false, riskLevel: "LOW" },
-      { id: "vercel.get_project",       label: "Get project",       description: "Get Vercel project details",           write: false, defaultApproval: false, riskLevel: "LOW" },
-      { id: "vercel.create_deployment", label: "Deploy to production", description: "Trigger a new production deployment", write: true, defaultApproval: true,  riskLevel: "CRITICAL" },
-      { id: "vercel.rollback_deployment",label:"Rollback deployment","description":"Roll back to a previous deployment",  write: true,  defaultApproval: true,  riskLevel: "CRITICAL" },
-      { id: "vercel.cancel_deployment", label: "Cancel deployment", description: "Cancel an in-progress deployment",     write: true,  defaultApproval: true,  riskLevel: "HIGH" },
+      { id: "vercel.list_deployments", label: "List deployments", description: "List recent Vercel deployments", write: false, defaultApproval: false, riskLevel: "LOW" },
+      { id: "vercel.get_deployment", label: "Get deployment", description: "Get details for a deployment", write: false, defaultApproval: false, riskLevel: "LOW" },
+      { id: "vercel.get_project", label: "Get project", description: "Get Vercel project details", write: false, defaultApproval: false, riskLevel: "LOW" },
+      { id: "vercel.create_deployment", label: "Deploy to production", description: "Trigger a new production deployment", write: true, defaultApproval: true, riskLevel: "CRITICAL" },
+      { id: "vercel.rollback_deployment", label: "Rollback deployment", "description": "Roll back to a previous deployment", write: true, defaultApproval: true, riskLevel: "CRITICAL" },
+      { id: "vercel.cancel_deployment", label: "Cancel deployment", description: "Cancel an in-progress deployment", write: true, defaultApproval: true, riskLevel: "HIGH" },
     ],
   },
   {
     id: "hubspot", name: "HubSpot", category: "CRM",
     iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/hubspot/hubspot-original.svg",
     actions: [
-      { id: "hubspot.read_contacts",  label: "Read contacts",  description: "List and search HubSpot contacts",           write: false, defaultApproval: false, riskLevel: "LOW" },
-      { id: "hubspot.create_contact", label: "Create contact", description: "Add a new contact to HubSpot",               write: true,  defaultApproval: false, riskLevel: "LOW" },
-      { id: "hubspot.update_contact", label: "Update contact", description: "Update a HubSpot contact record",            write: true,  defaultApproval: false, riskLevel: "LOW" },
-      { id: "hubspot.create_deal",    label: "Create deal",    description: "Create a new deal in HubSpot",               write: true,  defaultApproval: false, riskLevel: "LOW" },
-      { id: "hubspot.send_email",     label: "Send email",     description: "Send a marketing or transactional email",    write: true,  defaultApproval: true,  riskLevel: "HIGH" },
+      { id: "hubspot.read_contacts", label: "Read contacts", description: "List and search HubSpot contacts", write: false, defaultApproval: false, riskLevel: "LOW" },
+      { id: "hubspot.create_contact", label: "Create contact", description: "Add a new contact to HubSpot", write: true, defaultApproval: false, riskLevel: "LOW" },
+      { id: "hubspot.update_contact", label: "Update contact", description: "Update a HubSpot contact record", write: true, defaultApproval: false, riskLevel: "LOW" },
+      { id: "hubspot.create_deal", label: "Create deal", description: "Create a new deal in HubSpot", write: true, defaultApproval: false, riskLevel: "LOW" },
+      { id: "hubspot.send_email", label: "Send email", description: "Send a marketing or transactional email", write: true, defaultApproval: true, riskLevel: "HIGH" },
     ],
   },
   {
     id: "stripe", name: "Stripe", category: "Finance",
     iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/stripe/stripe-original.svg",
     actions: [
-      { id: "stripe.read_customers", label: "Read customers",        description: "List and search Stripe customers",      write: false, defaultApproval: false, riskLevel: "LOW" },
-      { id: "stripe.read_invoices",  label: "Read invoices",         description: "Read invoice data",                     write: false, defaultApproval: false, riskLevel: "LOW" },
-      { id: "stripe.create_payment_link", label: "Create payment link", description: "Create a Stripe payment link",      write: true,  defaultApproval: true,  riskLevel: "HIGH" },
-      { id: "stripe.issue_refund",   label: "Issue refund",          description: "Refund a payment",                     write: true,  defaultApproval: true,  riskLevel: "CRITICAL" },
+      { id: "stripe.read_customers", label: "Read customers", description: "List and search Stripe customers", write: false, defaultApproval: false, riskLevel: "LOW" },
+      { id: "stripe.read_invoices", label: "Read invoices", description: "Read invoice data", write: false, defaultApproval: false, riskLevel: "LOW" },
+      { id: "stripe.create_payment_link", label: "Create payment link", description: "Create a Stripe payment link", write: true, defaultApproval: true, riskLevel: "HIGH" },
+      { id: "stripe.issue_refund", label: "Issue refund", description: "Refund a payment", write: true, defaultApproval: true, riskLevel: "CRITICAL" },
     ],
   },
 ];
@@ -195,9 +195,9 @@ type PermissionEntry = {
 function riskColor(r: string) {
   const m: Record<string, string> = {
     CRITICAL: "bg-red-100 text-red-700 border-red-200",
-    HIGH:     "bg-orange-100 text-orange-700 border-orange-200",
-    MEDIUM:   "bg-amber-100 text-amber-700 border-amber-200",
-    LOW:      "bg-emerald-50 text-emerald-700 border-emerald-200",
+    HIGH: "bg-orange-100 text-orange-700 border-orange-200",
+    MEDIUM: "bg-amber-100 text-amber-700 border-amber-200",
+    LOW: "bg-emerald-50 text-emerald-700 border-emerald-200",
   };
   return m[r] || "bg-slate-100 text-slate-500 border-slate-200";
 }
@@ -205,9 +205,9 @@ function riskColor(r: string) {
 function riskDot(r: string) {
   const m: Record<string, string> = {
     CRITICAL: "bg-red-500",
-    HIGH:     "bg-orange-500",
-    MEDIUM:   "bg-amber-400",
-    LOW:      "bg-emerald-500",
+    HIGH: "bg-orange-500",
+    MEDIUM: "bg-amber-400",
+    LOW: "bg-emerald-500",
   };
   return m[r] || "bg-slate-300";
 }
@@ -728,10 +728,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
         prev.map((msg, idx) =>
           idx === msgIndex && msg.approvalRequired
             ? {
-                ...msg,
-                text: msg.text + "\n\n✅ **Action Authorized**: Approval request granted by founder!",
-                approvalRequired: { ...msg.approvalRequired, status: "APPROVED" },
-              }
+              ...msg,
+              text: msg.text + "\n\n✅ **Action Authorized**: Approval request granted by founder!",
+              approvalRequired: { ...msg.approvalRequired, status: "APPROVED" },
+            }
             : msg
         )
       );
@@ -748,10 +748,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
         prev.map((msg, idx) =>
           idx === msgIndex && msg.approvalRequired
             ? {
-                ...msg,
-                text: msg.text + "\n\n❌ **Action Rejected**: Action cancelled by founder.",
-                approvalRequired: { ...msg.approvalRequired, status: "REJECTED" },
-              }
+              ...msg,
+              text: msg.text + "\n\n❌ **Action Rejected**: Action cancelled by founder.",
+              approvalRequired: { ...msg.approvalRequired, status: "REJECTED" },
+            }
             : msg
         )
       );
@@ -873,7 +873,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
       });
       const data = await res.json();
       if (data.success) setActivityLogs(data.data?.activities || []);
-    } catch {/* silent */} finally {
+    } catch {/* silent */ } finally {
       setActivityLoading(false);
     }
   }, [companyId, employee]);
@@ -941,11 +941,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-3.5 py-1.5 text-xs font-mono font-medium transition-colors cursor-pointer border whitespace-nowrap ${
-              activeTab === tab
+            className={`px-3.5 py-1.5 text-xs font-mono font-medium transition-colors cursor-pointer border whitespace-nowrap ${activeTab === tab
                 ? "bg-slate-900 text-white border-slate-900"
                 : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-            }`}
+              }`}
           >
             {tab}
           </button>
@@ -1054,20 +1053,18 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                     <div
                       key={conv.id}
                       onClick={() => selectConversation(conv.id)}
-                      className={`p-2.5 border text-xs font-mono transition-colors cursor-pointer flex items-center justify-between group ${
-                        activeConversationId === conv.id
+                      className={`p-2.5 border text-xs font-mono transition-colors cursor-pointer flex items-center justify-between group ${activeConversationId === conv.id
                           ? "bg-slate-900 text-white border-slate-900"
                           : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
-                      }`}
+                        }`}
                     >
                       <div className="truncate flex-1 mr-2">
                         <span className="truncate block font-semibold">{conv.title || "Chat"}</span>
                       </div>
                       <button
                         onClick={(e) => handleDeleteConversation(conv.id, e)}
-                        className={`text-[11px] px-1 font-bold hover:text-red-500 opacity-60 group-hover:opacity-100 ${
-                          activeConversationId === conv.id ? "text-slate-300" : "text-slate-400"
-                        }`}
+                        className={`text-[11px] px-1 font-bold hover:text-red-500 opacity-60 group-hover:opacity-100 ${activeConversationId === conv.id ? "text-slate-300" : "text-slate-400"
+                          }`}
                         title="Delete conversation"
                       >
                         ✕
@@ -1141,11 +1138,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                     )}
                   </div>
                   <div
-                    className={`p-4 max-w-[85%] rounded-none leading-relaxed ${
-                      msg.sender === "user"
+                    className={`p-4 max-w-[85%] rounded-none leading-relaxed ${msg.sender === "user"
                         ? "bg-slate-900 text-white"
                         : "bg-slate-50 text-slate-800 border border-slate-200"
-                    }`}
+                      }`}
                   >
                     <FormattedText text={msg.text} isUser={msg.sender === "user"} />
 
@@ -1229,11 +1225,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               </span>
               <button
                 onClick={() => setAutoPlayVoiceReplies((prev) => !prev)}
-                className={`px-2.5 py-1 border transition-colors cursor-pointer ${
-                  autoPlayVoiceReplies
+                className={`px-2.5 py-1 border transition-colors cursor-pointer ${autoPlayVoiceReplies
                     ? "bg-slate-900 text-white border-slate-900"
                     : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
-                }`}
+                  }`}
               >
                 {autoPlayVoiceReplies ? "Auto-play replies: On" : "Auto-play replies: Off"}
               </button>
@@ -1275,11 +1270,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               <button
                 onClick={handleToggleVoiceInput}
                 disabled={!voiceInputSupported || chatLoading}
-                className={`px-4 py-2.5 border text-xs font-mono font-bold transition-colors cursor-pointer disabled:opacity-40 ${
-                  isListening
+                className={`px-4 py-2.5 border text-xs font-mono font-bold transition-colors cursor-pointer disabled:opacity-40 ${isListening
                     ? "bg-red-600 text-white border-red-600 hover:bg-red-700"
                     : "bg-white text-slate-800 border-slate-200 hover:bg-slate-50"
-                }`}
+                  }`}
               >
                 {isListening ? "Listening..." : "Mic"}
               </button>
@@ -1390,9 +1384,8 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               return (
                 <div
                   key={provider.id}
-                  className={`bg-white border transition-all ${
-                    isAssigned ? "border-slate-900 shadow-sm" : "border-slate-200"
-                  }`}
+                  className={`bg-white border transition-all ${isAssigned ? "border-slate-900 shadow-sm" : "border-slate-200"
+                    }`}
                 >
                   <div className="p-4 flex items-start gap-3">
                     {/* Icon */}
@@ -1430,17 +1423,15 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                     <button
                       onClick={() => isWorkspaceConnected && handleToggleProvider(provider, !isAssigned)}
                       disabled={!isWorkspaceConnected}
-                      className={`shrink-0 w-11 h-6 rounded-full border-2 transition-all duration-150 relative ${
-                        isAssigned && isWorkspaceConnected
+                      className={`shrink-0 w-11 h-6 rounded-full border-2 transition-all duration-150 relative ${isAssigned && isWorkspaceConnected
                           ? "bg-slate-900 border-slate-900"
                           : "bg-slate-100 border-slate-300"
-                      } disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer`}
+                        } disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer`}
                       title={!isWorkspaceConnected ? "Connect this integration in workspace settings first" : ""}
                     >
                       <span
-                        className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-150 ${
-                          isAssigned && isWorkspaceConnected ? "translate-x-5" : "translate-x-0.5"
-                        }`}
+                        className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-150 ${isAssigned && isWorkspaceConnected ? "translate-x-5" : "translate-x-0.5"
+                          }`}
                       />
                     </button>
                   </div>
@@ -1452,21 +1443,19 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                       <div className="flex gap-1">
                         <button
                           onClick={() => handleProviderAccessMode(provider, false)}
-                          className={`px-2.5 py-1 text-[11px] font-semibold border transition-colors ${
-                            !hasWrite
+                          className={`px-2.5 py-1 text-[11px] font-semibold border transition-colors ${!hasWrite
                               ? "bg-slate-900 text-white border-slate-900"
                               : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                          }`}
+                            }`}
                         >
                           Read-only
                         </button>
                         <button
                           onClick={() => handleProviderAccessMode(provider, true)}
-                          className={`px-2.5 py-1 text-[11px] font-semibold border transition-colors ${
-                            hasWrite
+                          className={`px-2.5 py-1 text-[11px] font-semibold border transition-colors ${hasWrite
                               ? "bg-slate-900 text-white border-slate-900"
                               : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                          }`}
+                            }`}
                         >
                           Full access
                         </button>
@@ -1535,7 +1524,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               {/* Risk legend */}
               <div className="bg-white border border-slate-200 p-3 flex items-center gap-4 flex-wrap">
                 <span className="text-[11px] text-slate-500 font-medium">Risk levels:</span>
-                {(["LOW","MEDIUM","HIGH","CRITICAL"] as const).map((r) => (
+                {(["LOW", "MEDIUM", "HIGH", "CRITICAL"] as const).map((r) => (
                   <span key={r} className={`text-[10px] font-mono font-bold px-2 py-0.5 border ${riskColor(r)}`}>{r}</span>
                 ))}
                 <span className="text-[10px] text-slate-400 ml-auto">
@@ -1598,9 +1587,8 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                     return (
                       <div
                         key={action.id}
-                        className={`grid grid-cols-[1fr_auto_auto_auto] gap-0 px-5 py-3 border-b border-slate-50 last:border-0 items-center transition-colors ${
-                          isEnabled ? "" : "opacity-40"
-                        }`}
+                        className={`grid grid-cols-[1fr_auto_auto_auto] gap-0 px-5 py-3 border-b border-slate-50 last:border-0 items-center transition-colors ${isEnabled ? "" : "opacity-40"
+                          }`}
                       >
                         <div className="min-w-0 pr-4">
                           <div className="flex items-center gap-2">
@@ -1621,13 +1609,11 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                         <div className="w-20 flex justify-center">
                           <button
                             onClick={() => toggle("enabled")}
-                            className={`w-10 h-5 rounded-full border-2 relative transition-all cursor-pointer ${
-                              isEnabled ? "bg-slate-900 border-slate-900" : "bg-slate-100 border-slate-300"
-                            }`}
+                            className={`w-10 h-5 rounded-full border-2 relative transition-all cursor-pointer ${isEnabled ? "bg-slate-900 border-slate-900" : "bg-slate-100 border-slate-300"
+                              }`}
                           >
-                            <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${
-                              isEnabled ? "translate-x-4" : "translate-x-0.5"
-                            }`} />
+                            <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${isEnabled ? "translate-x-4" : "translate-x-0.5"
+                              }`} />
                           </button>
                         </div>
 
@@ -1637,15 +1623,13 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                             <button
                               onClick={() => isEnabled && toggle("writeAccess")}
                               disabled={!isEnabled}
-                              className={`w-10 h-5 rounded-full border-2 relative transition-all cursor-pointer disabled:cursor-default ${
-                                isEnabled && perm?.writeAccess
+                              className={`w-10 h-5 rounded-full border-2 relative transition-all cursor-pointer disabled:cursor-default ${isEnabled && perm?.writeAccess
                                   ? "bg-blue-600 border-blue-600"
                                   : "bg-slate-100 border-slate-300"
-                              }`}
+                                }`}
                             >
-                              <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${
-                                isEnabled && perm?.writeAccess ? "translate-x-4" : "translate-x-0.5"
-                              }`} />
+                              <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${isEnabled && perm?.writeAccess ? "translate-x-4" : "translate-x-0.5"
+                                }`} />
                             </button>
                           ) : (
                             <span className="text-[10px] text-slate-300 font-mono">read-only</span>
@@ -1657,15 +1641,13 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                           <button
                             onClick={() => isEnabled && toggle("requiresApproval")}
                             disabled={!isEnabled}
-                            className={`w-10 h-5 rounded-full border-2 relative transition-all cursor-pointer disabled:cursor-default ${
-                              isEnabled && perm?.requiresApproval
+                            className={`w-10 h-5 rounded-full border-2 relative transition-all cursor-pointer disabled:cursor-default ${isEnabled && perm?.requiresApproval
                                 ? "bg-amber-500 border-amber-500"
                                 : "bg-slate-100 border-slate-300"
-                            }`}
+                              }`}
                           >
-                            <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${
-                              isEnabled && perm?.requiresApproval ? "translate-x-4" : "translate-x-0.5"
-                            }`} />
+                            <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${isEnabled && perm?.requiresApproval ? "translate-x-4" : "translate-x-0.5"
+                              }`} />
                           </button>
                         </div>
                       </div>
@@ -1684,13 +1666,15 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                 </h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
                   {[
-                    { label: "Total actions",       value: Object.keys(permissions).length,                                              color: "text-slate-700" },
-                    { label: "Write-enabled",       value: Object.values(permissions).filter((p) => p.writeAccess).length,              color: "text-blue-600" },
-                    { label: "Require approval",    value: Object.values(permissions).filter((p) => p.requiresApproval).length,         color: "text-amber-600" },
-                    { label: "CRITICAL risk",       value: Object.keys(permissions).filter((id) => {
+                    { label: "Total actions", value: Object.keys(permissions).length, color: "text-slate-700" },
+                    { label: "Write-enabled", value: Object.values(permissions).filter((p) => p.writeAccess).length, color: "text-blue-600" },
+                    { label: "Require approval", value: Object.values(permissions).filter((p) => p.requiresApproval).length, color: "text-amber-600" },
+                    {
+                      label: "CRITICAL risk", value: Object.keys(permissions).filter((id) => {
                         const a = PROVIDER_CATALOG.flatMap((p) => p.actions).find((a) => a.id === id);
                         return a?.riskLevel === "CRITICAL";
-                      }).length,                                                                                                         color: "text-red-600" },
+                      }).length, color: "text-red-600"
+                    },
                   ].map((s) => (
                     <div key={s.label} className="bg-slate-50 border border-slate-200 p-3">
                       <div className={`text-2xl font-bold font-mono ${s.color}`}>{s.value}</div>
