@@ -1,0 +1,104 @@
+openapi: 3.0.3
+info:
+  title: Clone AI Employee Operating System REST API
+  description: Production-grade REST API for creating AI employees, managing workflows, running tasks, executing tool integrations, and reviewing security approvals.
+  version: 1.0.0
+servers:
+  - url: http://localhost:4000
+    description: Local Development Server
+  - url: https://api.clone.ai
+    description: Production API Server
+paths:
+  /health:
+    get:
+      summary: API Health Check
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    example: "2026-09-14T21:30:00.000Z"
+  /api/v1/employees:
+    get:
+      summary: List AI Employees
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of deployed AI employees
+    post:
+      summary: Hire / Deploy New AI Employee
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - role
+              properties:
+                name:
+                  type: string
+                  example: Alex Vance
+                role:
+                  type: string
+                  example: AI CTO
+                autonomy:
+                  type: string
+                  enum: [FULL_HUMAN_APPROVAL, SEMI_AUTONOMOUS, AUTONOMOUS]
+                  default: SEMI_AUTONOMOUS
+      responses:
+        '201':
+          description: AI Employee hired successfully
+  /api/v1/tasks:
+    post:
+      summary: Dispatch Natural Language Task to AI Employee
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - prompt
+                - employeeId
+              properties:
+                prompt:
+                  type: string
+                  example: Audit backend API routes for missing authentication middleware and submit GitHub PR
+                employeeId:
+                  type: string
+                priority:
+                  type: string
+                  enum: [LOW, MEDIUM, HIGH, CRITICAL]
+                  default: HIGH
+      responses:
+        '201':
+          description: Task queued and execution state machine started
+  /api/v1/approvals:
+    get:
+      summary: List Pending Approvals
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Array of actions requiring human sign-off
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

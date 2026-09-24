@@ -1,0 +1,19 @@
+{
+  "name": "@clone/ai-runtime",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@clone/database": "file:../../packages/database",
+    "@clone/integration-framework": "file:../../packages/integration-framework",
+    "@clone/workspace-provider": "file:../../packages/workspace-provider",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "@types/node": "^20.12.12"
+  }
+}

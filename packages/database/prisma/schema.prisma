@@ -1,0 +1,541 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MANAGER
+  MEMBER
+  VIEWER
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  PAUSED
+  WAITING_FOR_APPROVAL
+  WORKING
+  BLOCKED
+  ERROR
+  ARCHIVED
+}
+
+enum TaskStatus {
+  BACKLOG
+  PLANNED
+  IN_PROGRESS
+  BLOCKED
+  WAITING_FOR_APPROVAL
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CHANGES_REQUESTED
+}
+
+enum MemoryScope {
+  COMPANY
+  TEAM
+  EMPLOYEE
+  PROJECT
+  TASK
+  CONVERSATION
+}
+
+model User {
+  id               String       @id @default(auto()) @map("_id") @db.ObjectId
+  email            String       @unique
+  passwordHash     String
+  fullName         String
+  avatarUrl        String?
+  isEmailVerified  Boolean      @default(false)
+  mfaEnabled       Boolean      @default(false)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  sessions         Session[]
+  memberships      Membership[]
+  loginHistories   LoginHistory[]
+  approvalsHandled ApprovalRequest[] @relation("ApprovedByUser")
+  auditLogs        AuditLog[]
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
+  token        String   @unique
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  revokedAt    DateTime?
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LoginHistory {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  ipAddress String
+  userAgent String
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Company {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  slug            String   @unique
+  logoUrl         String?
+  companySize     String   @default("1-10")
+  companyType     String   @default("SaaS")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  memberships     Membership[]
+  teams           Team[]
+  employees       AIEmployee[]
+  projects        Project[]
+  tasks           Task[]
+  workflows       Workflow[]
+  integrations    ConnectedAccount[]
+  approvals       ApprovalRequest[]
+  activities      ActivityLog[]
+  auditLogs       AuditLog[]
+  memories        EmployeeMemory[]
+  workspaces      WorkspaceConnection[]
+  apiKeys         ApiKey[]
+  usageRecords    UsageRecord[]
+  channels        Channel[]
+  channelMessages ChannelMessage[]
+}
+
+model Membership {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  companyId String   @db.ObjectId
+  role      Role     @default(MEMBER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+}
+
+model Team {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId    String   @db.ObjectId
+  name         String
+  description  String?
+  instructions String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employees    AIEmployee[]
+  tasks        Task[]
+}
+
+model AIEmployee {
+  id                 String         @id @default(auto()) @map("_id") @db.ObjectId
+  companyId          String         @db.ObjectId
+  teamId             String?        @db.ObjectId
+  name               String
+  role               String
+  avatarUrl          String?
+  shortDescription   String
+  personality        String
+  systemInstructions String
+  workingHours       String         @default("24/7 Continuous")
+  communicationStyle String         @default("Concise and direct")
+  status             EmployeeStatus @default(ACTIVE)
+  llmProvider        String         @default("mistral")
+  llmModel           String         @default("mistral-large-latest")
+  maxMonthlySpend    Float          @default(500.0)
+  currentSpend       Float          @default(0.0)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  company            Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  team               Team?          @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  instructions       EmployeeInstruction[]
+  permissions        EmployeePermission[]
+  memories           EmployeeMemory[]
+  tasksAssigned      Task[]         @relation("AssignedEmployee")
+  toolExecutions     ToolExecution[]
+  aiExecutions       AIExecution[]
+  approvals          ApprovalRequest[]
+  activities         ActivityLog[]
+  sentMessages       ChannelMessage[] @relation("MessageSender")
+}
+
+model EmployeeInstruction {
+  id         String     @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId String     @db.ObjectId
+  category   String     // "goal", "responsibility", "constraint", "success_criteria"
+  content    String
+  createdAt  DateTime   @default(now())
+
+  employee   AIEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model EmployeePermission {
+  id                String     @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId        String     @db.ObjectId
+  toolName          String     // e.g. "github.create_pull_request"
+  readAccess        Boolean    @default(true)
+  writeAccess       Boolean    @default(false)
+  requiresApproval Boolean    @default(true)
+  createdAt         DateTime   @default(now())
+
+  employee          AIEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, toolName])
+}
+
+model EmployeeMemory {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  companyId   String      @db.ObjectId
+  employeeId  String?     @db.ObjectId
+  scope       MemoryScope @default(EMPLOYEE)
+  scopeId     String?
+  key         String
+  content     String
+  confidence  Float       @default(1.0)
+  source      String
+  vectorEmbedding Float[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee    AIEmployee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+}
+
+model Project {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId   String   @db.ObjectId
+  name        String
+  description String?
+  repository  String?
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+  workspaces  WorkspaceConnection[]
+}
+
+model Task {
+  id                 String       @id @default(auto()) @map("_id") @db.ObjectId
+  companyId          String       @db.ObjectId
+  projectId          String?      @db.ObjectId
+  teamId             String?      @db.ObjectId
+  assignedEmployeeId String?      @db.ObjectId
+  title              String
+  description        String
+  naturalPrompt      String?
+  status             TaskStatus   @default(PLANNED)
+  priority           TaskPriority @default(MEDIUM)
+  dueDate            DateTime?
+  approvalRequired   Boolean      @default(false)
+  maxExecutionTimeMs Int          @default(300000)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  company            Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project            Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  team               Team?        @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  assignedEmployee   AIEmployee?  @relation("AssignedEmployee", fields: [assignedEmployeeId], references: [id], onDelete: SetNull)
+  executions         AIExecution[]
+  approvals          ApprovalRequest[]
+  channelMessages    ChannelMessage[]
+}
+
+model Workflow {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId   String   @db.ObjectId
+  name        String
+  description String?
+  triggerType String   // "EMAIL", "GITHUB_ISSUE", "SCHEDULE", "WEBHOOK", "MANUAL"
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  steps       WorkflowStep[]
+}
+
+model WorkflowStep {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  workflowId  String   @db.ObjectId
+  stepOrder   Int
+  employeeId  String?  @db.ObjectId
+  actionType  String   // "FETCH_CONTEXT", "PLAN", "EXECUTE_TOOL", "HUMAN_APPROVAL", "NOTIFY_SLACK"
+  configJson  String
+  createdAt   DateTime @default(now())
+
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+}
+
+model ConnectedAccount {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId      String   @db.ObjectId
+  provider       String
+  accountName    String
+  accountEmail   String?
+  encryptedToken String
+  refreshToken   String?
+  scopes         String
+  status         String   @default("CONNECTED")
+  connectedAt    DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  toolExecutions ToolExecution[]
+}
+
+model OAuthState {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  stateToken  String   @unique
+  companyId   String   @db.ObjectId
+  userId      String   @db.ObjectId
+  provider    String
+  redirectUri String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+}
+
+model AIExecution {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  companyId    String        @db.ObjectId
+  employeeId   String        @db.ObjectId
+  taskId       String?       @db.ObjectId
+  traceId      String        @unique
+  state        String        @default("RECEIVED")
+  tokenUsage   Int           @default(0)
+  stepsCount   Int           @default(0)
+  errorMessage String?
+  finalResult  String?
+  startedAt    DateTime      @default(now())
+  completedAt  DateTime?
+
+  employee     AIEmployee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  task         Task?         @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  toolExecutions ToolExecution[]
+  approvals    ApprovalRequest[]
+}
+
+model ToolExecution {
+  id           String           @id @default(auto()) @map("_id") @db.ObjectId
+  executionId  String           @db.ObjectId
+  employeeId   String           @db.ObjectId
+  connectionId String?          @db.ObjectId
+  toolName     String
+  inputArgs    String
+  outputResult String?
+  riskLevel    RiskLevel        @default(LOW)
+  status       String           @default("SUCCESS")
+  executedAt   DateTime         @default(now())
+
+  execution    AIExecution      @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  employee     AIEmployee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  connection   ConnectedAccount? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+}
+
+model ApprovalRequest {
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  companyId      String         @db.ObjectId
+  employeeId     String         @db.ObjectId
+  taskId         String?        @db.ObjectId
+  executionId    String?        @db.ObjectId
+  actionName     String
+  toolName       String
+  proposedParams String
+  riskLevel      RiskLevel      @default(HIGH)
+  riskReason     String
+  status         ApprovalStatus @default(PENDING)
+  approvedByUserId String?      @db.ObjectId
+  rejectionReason String?
+  createdAt      DateTime       @default(now())
+  handledAt      DateTime?
+
+  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee       AIEmployee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  task           Task?          @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  execution      AIExecution?   @relation(fields: [executionId], references: [id], onDelete: SetNull)
+  approvedByUser User?          @relation("ApprovedByUser", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+}
+
+model ActivityLog {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId   String   @db.ObjectId
+  employeeId  String?  @db.ObjectId
+  actorName   String
+  action      String
+  resource    String
+  details     String?
+  timestamp   DateTime @default(now())
+
+  company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee    AIEmployee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+}
+
+model AuditLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId  String   @db.ObjectId
+  userId     String?  @db.ObjectId
+  action     String
+  resource   String
+  ipAddress  String?
+  requestId  String?
+  result     String   @default("SUCCESS")
+  metadata   String?
+  timestamp  DateTime @default(now())
+
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model WorkspaceConnection {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId   String   @db.ObjectId
+  projectId   String?  @db.ObjectId
+  provider    String
+  workspaceId String
+  repository  String
+  status      String   @default("RUNNING")
+  createdAt   DateTime @default(now())
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  pullRequests PullRequestRecord[]
+  testRuns    TestRunRecord[]
+}
+
+model PullRequestRecord {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  workspaceId String   @db.ObjectId
+  prNumber    Int
+  title       String
+  branch      String
+  status      String   @default("OPEN")
+  createdAt   DateTime @default(now())
+
+  workspace   WorkspaceConnection @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model TestRunRecord {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  workspaceId String   @db.ObjectId
+  passed      Boolean
+  summary     String
+  executedAt  DateTime @default(now())
+
+  workspace   WorkspaceConnection @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model ApiKey {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId   String   @db.ObjectId
+  name        String
+  keyHash     String   @unique
+  keyPrefix   String
+  lastUsedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model UsageRecord {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId      String   @db.ObjectId
+  month          String
+  totalTokens    Int      @default(0)
+  totalToolCalls Int      @default(0)
+  totalExecutions Int     @default(0)
+  updatedAt      DateTime @updatedAt
+
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, month])
+}
+
+enum ChannelType {
+  TEAM
+  DIRECT
+  CROSS_TEAM
+}
+
+enum MessageType {
+  DISCUSSION
+  TASK_REQUEST
+  DELEGATION
+  DECISION
+  STATUS_UPDATE
+}
+
+model Channel {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  companyId   String        @db.ObjectId
+  teamId      String?       @db.ObjectId
+  name        String
+  type        ChannelType   @default(TEAM)
+  topic       String?
+  memberIds   String[]      @db.ObjectId
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  company     Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  team        Team?         @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  messages    ChannelMessage[]
+}
+
+model ChannelMessage {
+  id              String          @id @default(auto()) @map("_id") @db.ObjectId
+  companyId       String          @db.ObjectId
+  channelId       String          @db.ObjectId
+  senderId        String          @db.ObjectId
+  content         String
+  messageType     MessageType     @default(DISCUSSION)
+  mentionIds      String[]        @db.ObjectId
+  taskId          String?         @db.ObjectId
+  parentMessageId String?         @db.ObjectId
+  attachments     String?
+  createdAt       DateTime        @default(now())
+
+  company         Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  channel         Channel         @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  sender          AIEmployee      @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  task            Task?           @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  parentMessage   ChannelMessage? @relation("MessageThread", fields: [parentMessageId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies         ChannelMessage[] @relation("MessageThread")
+}
+

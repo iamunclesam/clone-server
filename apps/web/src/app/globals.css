@@ -1,0 +1,139 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 0 0% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 8%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 12%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 48%;
+    --accent: 0 0% 92%;
+    --accent-foreground: 0 0% 10%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 86%;
+    --input: 0 0% 86%;
+    --ring: 221 83% 53%;
+    --radius: 0rem;
+    --sidebar-width: 220px;
+  }
+
+  .dark {
+    --background: 0 0% 5%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 221 83% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 11%;
+    --secondary-foreground: 0 0% 95%;
+    --muted: 0 0% 11%;
+    --muted-foreground: 0 0% 55%;
+    --accent: 0 0% 14%;
+    --accent-foreground: 0 0% 95%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 16%;
+    --input: 0 0% 16%;
+    --ring: 221 83% 60%;
+  }
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-color: hsl(var(--border));
+    border-radius: 0 !important;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+
+  ::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+  }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+  }
+}
+
+/* Status badge colors */
+.status-active    { @apply bg-emerald-500/10 text-emerald-700 ring-1 ring-emerald-500/20; }
+.status-working   { @apply bg-blue-500/10 text-blue-700 ring-1 ring-blue-500/20; }
+.status-paused    { @apply bg-amber-500/10 text-amber-700 ring-1 ring-amber-500/20; }
+.status-blocked   { @apply bg-red-500/10 text-red-700 ring-1 ring-red-500/20; }
+.status-waiting   { @apply bg-violet-500/10 text-violet-700 ring-1 ring-violet-500/20; }
+.status-error     { @apply bg-rose-500/10 text-rose-700 ring-1 ring-rose-500/20; }
+.status-archived  { @apply bg-gray-500/10 text-gray-600 ring-1 ring-gray-500/20; }
+
+/* Risk badge colors */
+.risk-low      { @apply bg-emerald-500/10 text-emerald-700; }
+.risk-medium   { @apply bg-amber-500/10 text-amber-700; }
+.risk-high     { @apply bg-orange-500/10 text-orange-700; }
+.risk-critical { @apply bg-red-500/10 text-red-700; }
+
+/* Animated SVG dashed wire flow */
+@keyframes dash {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+/* Clone-specific utility classes */
+.clone-card {
+  background: white;
+  border: 1px solid hsl(var(--border));
+}
+
+.clone-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border: 1px solid currentColor;
+  opacity: 0.8;
+}
+
+/* Subtle grid background for canvas panels */
+.clone-grid-bg {
+  background-color: #fafafa;
+  background-image:
+    linear-gradient(to right, #e5e5e5 1px, transparent 1px),
+    linear-gradient(to bottom, #e5e5e5 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Live pulse indicator */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.pulse-dot {
+  animation: blink 1.8s ease-in-out infinite;
+}

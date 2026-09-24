@@ -1,0 +1,18 @@
+{
+  "name": "@clone/database",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "seed": "ts-node src/seed.ts"
+  },
+  "dependencies": {
+    "mongoose": "^8.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}
