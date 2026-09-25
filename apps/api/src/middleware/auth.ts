@@ -41,7 +41,8 @@ export function setSessionCookie(reply: FastifyReply, token: string) {
   } else {
     parts.push("SameSite=Lax");
   }
-  reply.appendHeader("Set-Cookie", parts.join("; "));
+  // Fastify 4 types have header(), not appendHeader()
+  reply.header("Set-Cookie", parts.join("; "));
 }
 
 export function clearSessionCookie(reply: FastifyReply) {
@@ -52,7 +53,7 @@ export function clearSessionCookie(reply: FastifyReply) {
   } else {
     parts.push("SameSite=Lax");
   }
-  reply.appendHeader("Set-Cookie", parts.join("; "));
+  reply.header("Set-Cookie", parts.join("; "));
 }
 
 export function signToken(payload: AuthenticatedUser): string {
