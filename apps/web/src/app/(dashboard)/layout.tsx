@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { CreateWorkspaceModal } from "@/components/CreateWorkspaceModal";
@@ -177,13 +177,20 @@ const CMD_ACTIONS = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, activeCompany, companies, switchCompany, logout } = useAuth();
+  const router = useRouter();
+  const { user, activeCompany, companies, switchCompany, logout, loading } = useAuth();
   const [cmdOpen, setCmdOpen] = useState(false);
   const [cmdQuery, setCmdQuery] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [wsDropdownOpen, setWsDropdownOpen] = useState(false);
   const [createWsModalOpen, setCreateWsModalOpen] = useState(false);
   const wsDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [loading, user, router]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -203,6 +210,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-slate-900 text-white font-sans">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-white/20 border-t-blue-500 rounded-full animate-spin" />
+          <p className="text-xs font-mono text-slate-400">Authenticating Clone AI OS session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   const filteredActions = CMD_ACTIONS.filter(
     (a) => !cmdQuery || a.label.toLowerCase().includes(cmdQuery.toLowerCase())

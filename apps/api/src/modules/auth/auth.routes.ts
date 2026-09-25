@@ -55,7 +55,7 @@ export async function authRoutes(app: FastifyInstance) {
     const token = signToken({ userId: user.id, email: user.email });
     setSessionCookie(reply, token);
 
-    return reply.status(201).send({ success: true, data: { user }, requestId: request.id });
+    return reply.status(201).send({ success: true, data: { user, token }, requestId: request.id });
   });
 
   // POST /auth/login
@@ -86,7 +86,7 @@ export async function authRoutes(app: FastifyInstance) {
     const token = signToken({ userId: user.id, email: user.email });
     setSessionCookie(reply, token);
 
-    return reply.send({ success: true, data: { user }, requestId: request.id });
+    return reply.send({ success: true, data: { user, token }, requestId: request.id });
   });
 
   // POST /auth/logout
@@ -105,6 +105,7 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
     const user = toPlainUser(userDoc);
-    return reply.send({ success: true, data: { user }, requestId: request.id });
+    const token = signToken({ userId: user.id, email: user.email });
+    return reply.send({ success: true, data: { user, token }, requestId: request.id });
   });
 }

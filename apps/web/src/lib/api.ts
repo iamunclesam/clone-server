@@ -203,6 +203,13 @@ async function request<T>(endpoint: string, options: RequestInit = {}, timeoutMs
     ...((options.headers as Record<string, string>) || {}),
   };
 
+  if (typeof window !== "undefined") {
+    const storedToken = localStorage.getItem("clone_auth_token");
+    if (storedToken && !headers["Authorization"]) {
+      headers["Authorization"] = `Bearer ${storedToken}`;
+    }
+  }
+
   if (options.body) {
     headers["Content-Type"] = "application/json";
   }
@@ -239,28 +246,43 @@ async function request<T>(endpoint: string, options: RequestInit = {}, timeoutMs
 
 export const api = {
   // Auth
-  async login(credentials: { email: string; password: string }): Promise<{ user: User }> {
-    return request<{ user: User }>("/auth/login", {
+  async login(credentials: { email: string; password: string }): Promise<{ user: User; token?: string }> {
+    const res = await request<{ user: User; token?: string }>("/auth/login", {
       method: "POST",
       body: JSON.stringify(credentials),
     });
+    if (typeof window !== "undefined" && res.token) {
+      localStorage.setItem("clone_auth_token", res.token);
+    }
+    return res;
   },
 
-  async register(data: { email: string; password: string; fullName: string }): Promise<{ user: User }> {
-    return request<{ user: User }>("/auth/register", {
+  async register(data: { email: string; password: string; fullName: string }): Promise<{ user: User; token?: string }> {
+    const res = await request<{ user: User; token?: string }>("/auth/register", {
       method: "POST",
       body: JSON.stringify(data),
     });
+    if (typeof window !== "undefined" && res.token) {
+      localStorage.setItem("clone_auth_token", res.token);
+    }
+    return res;
   },
 
   async logout(): Promise<{ message: string }> {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("clone_auth_token");
+    }
     return request<{ message: string }>("/auth/logout", {
       method: "POST",
     });
   },
 
-  async getSession(): Promise<{ user: User }> {
-    return request<{ user: User }>("/auth/session");
+  async getSession(): Promise<{ user: User; token?: string }> {
+    const res = await request<{ user: User; token?: string }>("/auth/session");
+    if (typeof window !== "undefined" && res.token) {
+      localStorage.setItem("clone_auth_token", res.token);
+    }
+    return res;
   },
 
   // Companies / Workspaces
