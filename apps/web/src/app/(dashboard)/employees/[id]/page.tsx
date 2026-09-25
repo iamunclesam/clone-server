@@ -3,13 +3,9 @@
 import { useState, useEffect, use, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { api, AIEmployee, ConnectedAccount, EmployeePermission } from "@/lib/api";
+import { api, AIEmployee, ConnectedAccount, EmployeePermission, getApiBaseUrl } from "@/lib/api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL
-  ? (process.env.NEXT_PUBLIC_API_URL.endsWith("/api/v1")
-      ? process.env.NEXT_PUBLIC_API_URL
-      : `${process.env.NEXT_PUBLIC_API_URL}/api/v1`)
-  : "http://localhost:4000/api/v1";
+const API_BASE = getApiBaseUrl();
 const BARK_VOICE_PRESET = "v2/en_speaker_6";
 
 interface BrowserSpeechRecognitionResult {

@@ -84,8 +84,7 @@ function OAuthCallbackContent() {
     }
     // If GitHub redirected to the web app instead of the API, forward the code for token exchange.
     if (oauthCode && oauthState) {
-      const raw = (process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_API_URL || "http://localhost:4000/api/v1").trim().replace(/\/+$/, "");
-      const apiBase = raw.endsWith("/api/v1") ? raw : `${raw}/api/v1`;
+      const apiBase = "/api/v1";
       window.location.replace(
         `${apiBase}/integrations/${encodeURIComponent(provider)}/callback?code=${encodeURIComponent(oauthCode)}&state=${encodeURIComponent(oauthState)}`
       );

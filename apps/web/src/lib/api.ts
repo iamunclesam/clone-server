@@ -1,10 +1,10 @@
-function getApiBaseUrl(): string {
-  // NOTE: Only NEXT_PUBLIC_* vars are available in the browser bundle.
-  // NEXT_API_URL (without NEXT_PUBLIC_) is always undefined on the client.
-  const envUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (!envUrl) return "http://localhost:4000/api/v1";
-  const trimmed = envUrl.trim().replace(/\/+$/, "");
-  return trimmed.endsWith("/api/v1") ? trimmed : `${trimmed}/api/v1`;
+/**
+ * Same-origin API prefix. The Next.js `/api/*` route proxies to the Fastify
+ * backend so the `session` cookie is first-party (required in production —
+ * browsers block third-party cookies across Vercel/Render hosts).
+ */
+export function getApiBaseUrl(): string {
+  return "/api/v1";
 }
 
 const API_BASE = getApiBaseUrl();

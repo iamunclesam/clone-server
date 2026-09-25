@@ -5,11 +5,9 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL
-  ? (process.env.NEXT_PUBLIC_API_URL.endsWith("/api/v1")
-      ? process.env.NEXT_PUBLIC_API_URL
-      : `${process.env.NEXT_PUBLIC_API_URL}/api/v1`)
-  : "http://localhost:4000/api/v1";
+import { getApiBaseUrl } from "@/lib/api";
+
+const API_BASE = getApiBaseUrl();
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

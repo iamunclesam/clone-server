@@ -22,13 +22,18 @@ import { channelsRoutes } from "./modules/channels/channels.routes";
 import { runtimeRoutes } from "./modules/runtime/runtime.routes";
 
 const PORT = Number(process.env.PORT) || 4000;
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "http://localhost:3000")
+const ALLOWED_ORIGINS = [process.env.ALLOWED_ORIGINS, process.env.WEB_URL, "http://localhost:3000"]
+  .filter(Boolean)
+  .join(",")
   .split(",")
-  .map((o) => o.trim())
+  .map((o) => o.trim().replace(/\/+$/, ""))
   .filter(Boolean);
+const UNIQUE_ORIGINS = [...new Set(ALLOWED_ORIGINS)];
 
 export async function buildApp() {
   const app = Fastify({
+    // Required so Secure cookies work behind Render/Vercel/nginx TLS termination.
+    trustProxy: true,
     logger: {
       level: process.env.LOG_LEVEL || "info",
       redact: ["req.headers.authorization", "req.body.password", "req.body.token"],
@@ -46,22 +51,29 @@ export async function buildApp() {
       },
     },
     crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
   });
 
-  // CORS — strict allowlist only
+  // CORS — strict allowlist only (same-origin proxy does not need this; keep for direct API tools)
   await app.register(fastifyCors, {
-    origin: ALLOWED_ORIGINS,
+    origin: (origin, cb) => {
+      if (!origin || UNIQUE_ORIGINS.includes(origin)) {
+        cb(null, true);
+        return;
+      }
+      cb(null, false);
+    },
     credentials: true,
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
   });
 
-  // Cookies — HttpOnly, Secure, SameSite=None (cross-origin: Vercel ↔ Render)
+  // Cookies — HttpOnly, Secure, SameSite=Lax (first-party via Next.js /api proxy)
   await app.register(fastifyCookie, {
     secret: process.env.COOKIE_SECRET || "change-me-in-production",
     parseOptions: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      sameSite: "lax",
       path: "/",
     },
   });

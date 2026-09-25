@@ -3,13 +3,9 @@
 import { useState, useEffect, useCallback, use } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { api, Team, AIEmployee } from "@/lib/api";
+import { api, Team, AIEmployee, getApiBaseUrl } from "@/lib/api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL
-  ? (process.env.NEXT_PUBLIC_API_URL.endsWith("/api/v1")
-      ? process.env.NEXT_PUBLIC_API_URL
-      : `${process.env.NEXT_PUBLIC_API_URL}/api/v1`)
-  : "http://localhost:4000/api/v1";
+const API_BASE = getApiBaseUrl();
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

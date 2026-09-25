@@ -26,6 +26,10 @@ services:
       NODE_ENV: production
       DATABASE_URL: postgresql://clone_admin:${POSTGRES_PASSWORD}@postgres:5432/clone_os?schema=public
       REDIS_URL: redis://redis:6379
+      WEB_URL: ${WEB_URL:-http://localhost:3000}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      COOKIE_SECRET: ${COOKIE_SECRET:-change-me-in-production}
     depends_on:
       postgres:
         condition: service_healthy

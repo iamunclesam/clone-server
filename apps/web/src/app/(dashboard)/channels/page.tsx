@@ -2,13 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { api, Channel, ChannelMessage, AIEmployee, Team } from "@/lib/api";
+import { api, Channel, ChannelMessage, AIEmployee, Team, getApiBaseUrl } from "@/lib/api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL
-  ? (process.env.NEXT_PUBLIC_API_URL.endsWith("/api/v1")
-      ? process.env.NEXT_PUBLIC_API_URL
-      : `${process.env.NEXT_PUBLIC_API_URL}/api/v1`)
-  : "http://localhost:4000/api/v1";
+const API_BASE = getApiBaseUrl();
 
 const MSG_BADGES: Record<string, { label: string; cls: string }> = {
   DISCUSSION: { label: "Chat", cls: "bg-slate-100 text-slate-600 border-slate-200" },
