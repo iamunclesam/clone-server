@@ -57,23 +57,35 @@ export async function buildApp() {
   // CORS — strict allowlist only (same-origin proxy does not need this; keep for direct API tools)
   await app.register(fastifyCors, {
     origin: (origin, cb) => {
-      if (!origin || UNIQUE_ORIGINS.includes(origin)) {
+      if (!origin) {
         cb(null, true);
         return;
       }
-      cb(null, false);
+      let hostname = "";
+      try {
+        hostname = new URL(origin).hostname;
+      } catch {
+        cb(null, false);
+        return;
+      }
+      const allowed =
+        UNIQUE_ORIGINS.includes(origin) ||
+        hostname === "localhost" ||
+        hostname.endsWith(".vercel.app") ||
+        hostname.endsWith(".onrender.com");
+      cb(null, allowed);
     },
     credentials: true,
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
   });
 
-  // Cookies — HttpOnly, Secure, SameSite=Lax (first-party via Next.js /api proxy)
+  // Cookies — parse only; Set-Cookie is written in auth routes (incl. Partitioned)
   await app.register(fastifyCookie, {
     secret: process.env.COOKIE_SECRET || "change-me-in-production",
     parseOptions: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       path: "/",
     },
   });

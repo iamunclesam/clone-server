@@ -4,7 +4,13 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 function backendOrigin(): string {
-  const raw = (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000").trim();
+  const raw = (
+    process.env.API_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    (process.env.NODE_ENV === "production"
+      ? "https://clone-server-9h5j.onrender.com"
+      : "http://localhost:4000")
+  ).trim();
   return raw.replace(/\/+$/, "").replace(/\/api\/v1$/i, "");
 }
 

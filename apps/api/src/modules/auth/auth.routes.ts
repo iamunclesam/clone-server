@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import bcrypt from "bcryptjs";
 import { prisma } from "@clone/database";
-import { signToken, requireAuth, sessionCookieOptions } from "../../middleware/auth";
+import { signToken, requireAuth, setSessionCookie, clearSessionCookie } from "../../middleware/auth";
 import { z } from "zod";
 
 const registerSchema = z.object({
@@ -53,7 +53,7 @@ export async function authRoutes(app: FastifyInstance) {
     const user = toPlainUser(userDoc);
 
     const token = signToken({ userId: user.id, email: user.email });
-    reply.setCookie("session", token, sessionCookieOptions());
+    setSessionCookie(reply, token);
 
     return reply.status(201).send({ success: true, data: { user }, requestId: request.id });
   });
@@ -84,15 +84,14 @@ export async function authRoutes(app: FastifyInstance) {
 
     const user = toPlainUser(userDoc);
     const token = signToken({ userId: user.id, email: user.email });
-    reply.setCookie("session", token, sessionCookieOptions());
+    setSessionCookie(reply, token);
 
     return reply.send({ success: true, data: { user }, requestId: request.id });
   });
 
   // POST /auth/logout
   app.post("/logout", { preHandler: [requireAuth] }, async (request, reply) => {
-    const { maxAge: _maxAge, ...clearOpts } = sessionCookieOptions();
-    reply.clearCookie("session", clearOpts);
+    clearSessionCookie(reply);
     return reply.send({ success: true, data: { message: "Logged out successfully" }, requestId: request.id });
   });
 
