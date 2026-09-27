@@ -666,16 +666,91 @@ export async function employeesRoutes(app: FastifyInstance) {
                 const formatted = repos.map((r, i) => `${i + 1}. ${r.fullName}${r.private ? " (private)" : ""} — ${r.url}`).join("\n");
                 contextSnippets.push(`[REAL CONNECTED APP: GITHUB (${acc.accountName}${acc.accountEmail ? ` / ${acc.accountEmail}` : ""})]\nRepositories:\n${formatted}`);
               } else if (res?.success === false) {
-                contextSnippets.push(`[CONNECTED APP: GITHUB (${acc.accountName})]\n⚠️ Connected but GitHub API failed: ${(res as any).error}`);
+                contextSnippets.push(`[CONNECTED APP: GITHUB (${acc.accountName})]\n⚠️ LIVE API ERROR: ${res.error}`);
               } else {
                 contextSnippets.push(`[REAL CONNECTED APP: GITHUB (${acc.accountName})]\nActive connection verified. No repositories returned.`);
               }
             } catch (err: any) {
-              console.warn("Failed to read real GitHub repositories:", err);
-              contextSnippets.push(`[CONNECTED APP: GITHUB (${acc.accountName})]\nStatus: Authorized. Listing repositories threw an error.`);
+              contextSnippets.push(`[CONNECTED APP: GITHUB (${acc.accountName})]\n⚠️ LIVE API ERROR: ${err?.message || "Execution failed"}`);
             }
-          } else {
-            contextSnippets.push(`[CONNECTED APP: GITHUB (${acc.accountName})]\nStatus: Connection recorded but no usable access token. Reconnect GitHub.`);
+          }
+        } else if (acc.provider === "hubspot") {
+          const provider = registry.getProvider("hubspot");
+          if (provider && decryptedAccessToken) {
+            try {
+              const res = await provider.executeTool({
+                connectionId: acc.id,
+                toolName: "hubspot.read_contacts",
+                arguments: { accessToken: decryptedAccessToken, limit: 10 },
+                employeeId: employee.id,
+                companyId,
+              });
+              if (res?.success && (res.data as any)?.contacts) {
+                const contacts: Array<any> = (res.data as any).contacts;
+                if (contacts.length > 0) {
+                  const formatted = contacts.map((c, i) => `${i + 1}. ${c.firstname || ""} ${c.lastname || ""} <${c.email}> (${c.company || "No Company"})`).join("\n");
+                  contextSnippets.push(`[REAL CONNECTED APP: HUBSPOT (${acc.accountName})]\nLive CRM Contacts (${contacts.length}):\n${formatted}`);
+                } else {
+                  contextSnippets.push(`[REAL CONNECTED APP: HUBSPOT (${acc.accountName})]\nLive CRM connection active. 0 contact records found.`);
+                }
+              } else {
+                contextSnippets.push(`[CONNECTED APP: HUBSPOT (${acc.accountName})]\n⚠️ LIVE API ERROR: ${res?.error || "Failed to fetch HubSpot contacts"}`);
+              }
+            } catch (err: any) {
+              contextSnippets.push(`[CONNECTED APP: HUBSPOT (${acc.accountName})]\n⚠️ LIVE API ERROR: ${err?.message || "HubSpot fetch failed"}`);
+            }
+          }
+        } else if (acc.provider === "calendar") {
+          const provider = registry.getProvider("calendar");
+          if (provider && decryptedAccessToken) {
+            try {
+              const res = await provider.executeTool({
+                connectionId: acc.id,
+                toolName: "calendar.read_events",
+                arguments: { accessToken: decryptedAccessToken },
+                employeeId: employee.id,
+                companyId,
+              });
+              if (res?.success && (res.data as any)?.events) {
+                const events: Array<any> = (res.data as any).events;
+                if (events.length > 0) {
+                  const formatted = events.map((e, i) => `${i + 1}. "${e.summary}" at ${e.start} (${e.location || "No location"})`).join("\n");
+                  contextSnippets.push(`[REAL CONNECTED APP: GOOGLE CALENDAR (${acc.accountName})]\nUpcoming Events:\n${formatted}`);
+                } else {
+                  contextSnippets.push(`[REAL CONNECTED APP: GOOGLE CALENDAR (${acc.accountName})]\nCalendar active. 0 upcoming events.`);
+                }
+              } else {
+                contextSnippets.push(`[CONNECTED APP: GOOGLE CALENDAR (${acc.accountName})]\n⚠️ LIVE API ERROR: ${res?.error || "Failed to fetch Calendar events"}`);
+              }
+            } catch (err: any) {
+              contextSnippets.push(`[CONNECTED APP: GOOGLE CALENDAR (${acc.accountName})]\n⚠️ LIVE API ERROR: ${err?.message || "Calendar fetch failed"}`);
+            }
+          }
+        } else if (acc.provider === "notion") {
+          const provider = registry.getProvider("notion");
+          if (provider && decryptedAccessToken) {
+            try {
+              const res = await provider.executeTool({
+                connectionId: acc.id,
+                toolName: "notion.search_pages",
+                arguments: { accessToken: decryptedAccessToken, query: "" },
+                employeeId: employee.id,
+                companyId,
+              });
+              if (res?.success && (res.data as any)?.results) {
+                const pages: Array<any> = (res.data as any).results;
+                if (pages.length > 0) {
+                  const formatted = pages.map((p, i) => `${i + 1}. ${p.title} (${p.url || p.id})`).join("\n");
+                  contextSnippets.push(`[REAL CONNECTED APP: NOTION (${acc.accountName})]\nPages:\n${formatted}`);
+                } else {
+                  contextSnippets.push(`[REAL CONNECTED APP: NOTION (${acc.accountName})]\nNotion workspace active. 0 pages returned.`);
+                }
+              } else {
+                contextSnippets.push(`[CONNECTED APP: NOTION (${acc.accountName})]\n⚠️ LIVE API ERROR: ${res?.error || "Failed to search Notion pages"}`);
+              }
+            } catch (err: any) {
+              contextSnippets.push(`[CONNECTED APP: NOTION (${acc.accountName})]\n⚠️ LIVE API ERROR: ${err?.message || "Notion search failed"}`);
+            }
           }
         } else {
           contextSnippets.push(`[CONNECTED APP: ${acc.provider.toUpperCase()} (${acc.accountName})]\nStatus: Active connection.`);
@@ -696,8 +771,11 @@ ${memoryFacts || "No prior facts stored."}
 REAL CONNECTED APPLICATIONS DATA CONTEXT:
 ${contextSnippets.length > 0 ? contextSnippets.join("\n\n") : "No active integration context currently loaded."}
 
-CRITICAL INSTRUCTION: You must retain multi-turn context from previous chat messages. If the user previously asked to perform an action (like sending an email) and is now providing missing details (like company name, recipient, subject, or body), combine all information provided across messages.
-If all details needed to draft or send an email are present, state clearly that you are initiating the action. Respond as ${employee.name}.`;
+CRITICAL ACCURACY & TRUTHFULNESS DIRECTIVES:
+1. NEVER invent, generate, assume, or output demo, mock, or fake data under any circumstances.
+2. If the user asks for data (e.g. contacts, deals, emails, repos, issues, events), answer STRICTLY using the REAL CONNECTED APPLICATIONS DATA CONTEXT provided above.
+3. If live integration data could not be retrieved, or if an app returned an error (e.g., status 403, scope missing, or API error in the context above), state the EXACT error and failure reason clearly to the user in a natural, helpful conversational tone (e.g., "I attempted to fetch your HubSpot contacts, but the integration returned an error: [error details]. Please verify your integration setup.").
+4. Do NOT pretend a failed request succeeded or make up fake numbers/names. Be 100% transparent.`;
 
     // Format conversation history for Mistral multi-turn memory
     const formattedHistory = Array.isArray(history)

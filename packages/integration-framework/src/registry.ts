@@ -4,6 +4,8 @@ import { SlackIntegrationProvider } from "./providers/slack";
 import { GmailIntegrationProvider } from "./providers/gmail";
 import { NotionIntegrationProvider } from "./providers/notion";
 import { LinearIntegrationProvider } from "./providers/linear";
+import { HubSpotIntegrationProvider } from "./providers/hubspot";
+import { GoogleCalendarIntegrationProvider } from "./providers/calendar";
 
 export class IntegrationRegistry {
   private static instance: IntegrationRegistry;
@@ -15,6 +17,8 @@ export class IntegrationRegistry {
     this.registerProvider(new GmailIntegrationProvider());
     this.registerProvider(new NotionIntegrationProvider());
     this.registerProvider(new LinearIntegrationProvider());
+    this.registerProvider(new HubSpotIntegrationProvider());
+    this.registerProvider(new GoogleCalendarIntegrationProvider());
   }
 
   public static getInstance(): IntegrationRegistry {

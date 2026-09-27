@@ -206,24 +206,27 @@ export const prisma: any = {
 
   user: {
     findUnique: async (a: any) => {
-    if (a.where?.email) return N(UserModel.findOne({ email: a.where.email }));
-    if (a.where?.id) {
-      if (!isObjectId(a.where.id)) return null;
-      return N(UserModel.findById(a.where.id));
-    }
-    return null;
+      if (a.where?.email) return N(UserModel.findOne({ email: a.where.email }));
+      if (a.where?.id) {
+        if (isObjectId(a.where.id)) {
+          const found = await UserModel.findById(toId(a.where.id));
+          if (found) return N(found);
+        }
+        return N(UserModel.findOne({ _id: a.where.id }));
+      }
+      return null;
+    },
+    upsert: async (a: any) => {
+      let d = await UserModel.findOne(a.where);
+      if (!d) d = await UserModel.create(a.create);
+      return N(d);
+    },
+    create: async (a: any) => N(UserModel.create(a.data)),
+    update: async (a: any) => {
+      if (!isObjectId(a.where?.id)) return null;
+      return N(UserModel.findByIdAndUpdate(toId(a.where.id), a.data, { new: true }));
+    },
   },
-  upsert: async (a: any) => {
-    let d = await UserModel.findOne(a.where);
-    if (!d) d = await UserModel.create(a.create);
-    return N(d);
-  },
-  create: async (a: any) => N(UserModel.create(a.data)),
-  update: async (a: any) => {
-    if (!isObjectId(a.where?.id)) return null;
-    return N(UserModel.findByIdAndUpdate(a.where.id, a.data, { new: true }));
-  },
-},
 
   company: {
     findUnique: async (a: any) => {

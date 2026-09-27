@@ -43,7 +43,7 @@ declare global {
 }
 
 const TABS = [
-  "Chat & Queries",
+  "Chat",
   "Connected Applications",
   "Permissions & Rules",
   "Activity Logs",
@@ -907,12 +907,12 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                 <span className={`text-[10px] font-mono font-bold px-2 py-0.5 border ${isPaused ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}`}>
                   ● {employee?.status || "ACTIVE"}
                 </span>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 border bg-purple-50 text-purple-700 border-purple-200">
+                {/* <span className="text-[10px] font-mono font-bold px-2 py-0.5 border bg-purple-50 text-purple-700 border-purple-200">
                   ⚡ MISTRAL AI
-                </span>
+                </span> */}
               </div>
               <p className="text-xs font-mono text-slate-500 mt-0.5">
-                Role: {employee?.role || "Agent"} • Workspace: {activeCompany?.slug || "acme"} • Model: {employee?.llmModel || "mistral-small-latest"}
+                Role: {employee?.role || "Agent"} • Workspace: {activeCompany?.slug || "acme"} 
               </p>
             </div>
           </div>
@@ -957,14 +957,14 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white border border-slate-200 p-6 space-y-4">
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono flex items-center justify-between">
-                <span>System Execution Profile</span>
-                <span className="text-xs text-blue-600 font-mono">LIVE API</span>
+                <span>System Profile</span>
+                
               </h3>
 
               <div className="space-y-2 font-mono text-xs">
                 <div className="p-3 bg-slate-50 border border-slate-200 text-slate-700 flex items-center justify-between">
-                  <span>✓ Mistral AI engine loaded ({employee?.llmModel || "mistral-small-latest"})</span>
-                  <span className="text-[10px] text-purple-600 font-bold">MISTRAL AI</span>
+                  {/* <span>✓ Mistral AI engine loaded ({employee?.llmModel || "mistral-small-latest"})</span>
+                  <span className="text-[10px] text-purple-600 font-bold">MISTRAL AI</span> */}
                 </div>
                 <div className="p-3 bg-slate-50 border border-slate-200 text-slate-700 flex items-center justify-between">
                   <span>✓ Connected Applications Grounding Engine</span>
@@ -995,14 +995,14 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                 Runtime Governance
               </h3>
 
-              <div className="flex justify-between py-2 border-b border-slate-100 font-mono">
+              {/* <div className="flex justify-between py-2 border-b border-slate-100 font-mono">
                 <span className="text-slate-500">LLM Engine</span>
                 <span className="text-purple-700 font-bold">Mistral AI</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-slate-100 font-mono">
+              </div> */}
+              {/* <div className="flex justify-between py-2 border-b border-slate-100 font-mono">
                 <span className="text-slate-500">Model Name</span>
                 <span className="text-slate-900 font-bold">{employee?.llmModel || "mistral-small-latest"}</span>
-              </div>
+              </div> */}
               <div className="flex justify-between py-2 border-b border-slate-100 font-mono">
                 <span className="text-slate-500">Monthly Spend Limit</span>
                 <span className="text-slate-900 font-bold">${employee?.maxMonthlySpend || 500}</span>
@@ -1026,10 +1026,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
       )}
 
       {/* Tab: Chat & Queries */}
-      {activeTab === "Chat & Queries" && (
+      {activeTab === "Chat" && (
         <div className="bg-white border border-slate-200 grid grid-cols-1 lg:grid-cols-5 min-h-[600px]">
           {/* Left Sidebar: Conversation History & Threads */}
-          <div className="lg:col-span-1 border-r border-slate-200 bg-slate-50 flex flex-col justify-between p-4 space-y-4">
+          <div className="lg:col-span-1 border-r border-slate-200 bg-white flex flex-col justify-between p-4 space-y-4">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-mono font-bold text-slate-900 uppercase tracking-wider">
@@ -1089,21 +1089,21 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-xs font-mono font-bold text-slate-900">
-                  Interactive Query Console — {employee?.name}
+                 {employee?.name}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono px-2 py-0.5 bg-purple-100 text-purple-800 border border-purple-200 font-semibold">
+                {/* <span className="text-[10px] font-mono px-2 py-0.5 bg-purple-100 text-purple-800 border border-purple-200 font-semibold">
                   MISTRAL AI
-                </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 bg-amber-100 text-amber-800 border border-amber-200 font-semibold">
+                </span> */}
+                {/* <span className="text-[10px] font-mono px-2 py-0.5 bg-amber-100 text-amber-800 border border-amber-200 font-semibold">
                   BARK VOICE
                 </span>
                 {connectedProviders.map((p) => (
                   <span key={p} className="text-[10px] font-mono px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 font-semibold uppercase">
                     ✓ {p}
                   </span>
-                ))}
+                ))} */}
               </div>
             </div>
 
@@ -1214,15 +1214,12 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               {chatLoading && (
                 <div className="flex items-center gap-2 text-slate-400 text-xs font-mono p-2">
                   <span className="animate-spin">⏳</span>
-                  <span>{employee?.name} is querying connected applications with Mistral AI...</span>
+                  <span>{employee?.name} is thinking...</span>
                 </div>
               )}
             </div>
 
-            <div className="px-6 py-3 border-t border-slate-100 bg-slate-50 flex flex-wrap items-center gap-2 text-[11px] font-mono">
-              <span className="px-2 py-1 border border-amber-200 bg-amber-50 text-amber-800">
-                Bark preset: {BARK_VOICE_PRESET}
-              </span>
+            {/* <div className="px-6 py-3 border-t border-slate-100 bg-slate-50 flex flex-wrap items-center gap-2 text-[11px] font-mono">
               <button
                 onClick={() => setAutoPlayVoiceReplies((prev) => !prev)}
                 className={`px-2.5 py-1 border transition-colors cursor-pointer ${autoPlayVoiceReplies
@@ -1240,7 +1237,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                   {voiceError}
                 </span>
               )}
-            </div>
+            </div> */}
 
             {/* Quick Prompts Suggestions */}
             <div className="px-6 py-2 border-t border-slate-100 bg-slate-50/50 flex flex-wrap gap-2">
@@ -1330,7 +1327,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
 
-            <div className="p-4 bg-white border border-slate-200 space-y-2">
+            {/* <div className="p-4 bg-white border border-slate-200 space-y-2">
               <h5 className="text-xs font-mono font-bold text-slate-900">LLM Provider Specs</h5>
               <div className="text-[11px] font-mono text-slate-600 space-y-1">
                 <div>Provider: <span className="font-bold text-purple-700">Mistral AI</span></div>
@@ -1338,7 +1335,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                 <div>Grounding: <span className="text-emerald-700 font-bold">Enabled</span></div>
                 <div>Voice: <span className="font-bold text-amber-700">Bark ({BARK_VOICE_PRESET})</span></div>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       )}

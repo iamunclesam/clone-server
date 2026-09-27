@@ -404,14 +404,14 @@ export class RuntimeEngine {
 
       try {
         const rawAction: any = proposedAction;
-        const actionStr = typeof rawAction === "string" ? rawAction : (rawAction?.id || rawAction?.toolName || String(rawAction || ""));
-        const provider = actionStr.includes(".") ? actionStr.split(".")[0] : actionStr;
+        const actionStr = typeof rawAction === "string" ? rawAction : (typeof rawAction?.id === "string" ? rawAction.id : (typeof rawAction?.toolName === "string" ? rawAction.toolName : String(rawAction || "")));
+        const provider = typeof actionStr === "string" && actionStr.includes(".") ? actionStr.split(".")[0] : actionStr;
         const integrationProvider = this.registry.getProvider(provider);
         if (integrationProvider) {
           const connectedAccount = connectedAccounts.find((a: any) => a.provider === provider);
           const toolResult = await integrationProvider.executeTool({
             connectionId: connectedAccount?.id || "runtime",
-            toolName: proposedAction,
+            toolName: actionStr,
             arguments: execution.input || {},
             employeeId: cloneId,
             companyId,
@@ -684,7 +684,7 @@ export class RuntimeEngine {
 
     if (eventActionMap[triggerSource]) {
       const action = eventActionMap[triggerSource];
-      const provider = action.split(".")[0];
+      const provider = typeof action === "string" && action.includes(".") ? action.split(".")[0] : String(action || "");
       if (connectedProviders.includes(provider)) {
         return action;
       }
@@ -694,13 +694,13 @@ export class RuntimeEngine {
     if (compiled?.availableActions) {
       const readAction = (compiled.availableActions as any[]).find(
         (a: any) => {
-          const actionStr = typeof a === "string" ? a : (a?.id || a?.toolName || a?.name || String(a || ""));
-          const p = actionStr.includes(".") ? actionStr.split(".")[0] : actionStr;
+          const actionStr = typeof a === "string" ? a : (typeof a?.id === "string" ? a.id : (typeof a?.toolName === "string" ? a.toolName : (typeof a?.name === "string" ? a.name : String(a || ""))));
+          const p = typeof actionStr === "string" && actionStr.includes(".") ? actionStr.split(".")[0] : actionStr;
           return connectedProviders.includes(p) && !actionStr.includes("send") && !actionStr.includes("create") && !actionStr.includes("deploy");
         }
       );
       if (readAction) {
-        return typeof readAction === "string" ? readAction : (readAction.id || readAction.toolName || String(readAction));
+        return typeof readAction === "string" ? readAction : (typeof readAction?.id === "string" ? readAction.id : (typeof readAction?.toolName === "string" ? readAction.toolName : String(readAction || "")));
       }
     }
 

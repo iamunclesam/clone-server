@@ -25,9 +25,17 @@ function isDemoConnectedAccount(connection: any): boolean {
   const token = String(connection?.encryptedToken || "");
   const name = String(connection?.accountName || "");
   const email = String(connection?.accountEmail || "");
+
+  // Generic Acme demo accounts (GitHub, Slack, etc.)
   if (token.startsWith("enc_github_token") || token.startsWith("enc_slack_token") || token.startsWith("gho_mock_token_")) return true;
-  if (name === "Acme-Org" || name === "Acme-GitHub-Org" || name === "Acme Workspace") return true;
-  if (email === "devops@acme.com" || email === "bot@acme.slack.com") return true;
+  if (name === "Acme-Org" || name === "Acme-GitHub-Org" || name === "Acme Workspace" || name === "Acme HubSpot CRM") return true;
+  if (email === "devops@acme.com" || email === "bot@acme.slack.com" || email === "sales@acme.com") return true;
+
+  // HubSpot demo/mock entries — saved by the old code that used a bad endpoint
+  // and fell back to hardcoded sentinel strings, or created mock tokens.
+  if (email === "crm@hubspot.com" && name === "HubSpot CRM") return true;
+  if (token.includes("hubspot_mock_")) return true;
+
   return false;
 }
 

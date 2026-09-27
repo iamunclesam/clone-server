@@ -7,3 +7,5 @@ export * from "./providers/slack";
 export * from "./providers/gmail";
 export * from "./providers/notion";
 export * from "./providers/linear";
+export * from "./providers/hubspot";
+export * from "./providers/calendar";

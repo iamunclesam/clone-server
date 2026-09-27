@@ -1,3 +1,4 @@
+// API Server with Google Calendar, HubSpot, Notion & Slack integrations (Session fallback applied)
 import "dotenv/config";
 import Fastify from "fastify";
 import fastifyCors from "@fastify/cors";

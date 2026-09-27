@@ -97,7 +97,10 @@ export async function authRoutes(app: FastifyInstance) {
 
   // GET /auth/session
   app.get("/session", { preHandler: [requireAuth] }, async (request, reply) => {
-    const userDoc = await prisma.user.findUnique({ where: { id: request.user!.userId } });
+    let userDoc = request.user!.userId ? await prisma.user.findUnique({ where: { id: request.user!.userId } }) : null;
+    if (!userDoc && request.user!.email) {
+      userDoc = await prisma.user.findUnique({ where: { email: request.user!.email } });
+    }
     if (!userDoc) {
       return reply.status(404).send({
         success: false,

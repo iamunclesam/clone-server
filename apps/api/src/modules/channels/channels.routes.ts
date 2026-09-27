@@ -30,11 +30,22 @@ async function callMistral(
   return "";
 }
 
-function cloneSystemPrompt(clone: any): string {
-  return `You are ${clone.name}, an autonomous AI employee with the role of "${clone.role}".
-Personality: "${clone.personality || "Professional, concise, action-oriented"}".
-Directives: "${clone.systemInstructions || "Fulfil company goals efficiently and communicate clearly with team members."}".
-You are in a team channel. Respond focused, in-character, 1–3 sentences max. Do not say you are an AI.`;
+function cloneSystemPrompt(clone: any, channelType?: string): string {
+  const channelScope = channelType === "CROSS_TEAM"
+    ? "You are in a Cross-Team Coordination Channel collaborating with teammates across departments."
+    : "You are in your Team Channel chatting with your direct team members.";
+
+  return `You are ${clone.name}, a real human teammate with the role of "${clone.role}".
+Your Personality: "${clone.personality || 'Friendly, sharp, direct, and conversational'}".
+Your System Directives: "${clone.systemInstructions || 'Fulfill company goals efficiently and support your teammates.'}".
+
+Channel Context: ${channelScope}
+
+COMMUNICATION & TONE RULES:
+1. Speak naturally like a real human coworker in Slack/Teams. Avoid rigid corporate jargon or boilerplate phrases (never say "Understood team. I have logged the task and will begin execution now").
+2. Adapt your vocabulary, tone, and style directly to match your specified Personality ("${clone.personality || 'Friendly and professional'}").
+3. NEVER make up or assume fake data or numbers. If you need data or have executed something, state real facts. If data is unavailable, explain it transparently like a real teammate.
+4. Keep messages conversational, natural, and engaging (1-3 sentences max).`;
 }
 
 async function guardCompanyAccess(companyId: string, userId: string, reply: any, requestId: string) {
@@ -142,6 +153,8 @@ export async function channelsRoutes(app: FastifyInstance) {
     let messageType = body.data.messageType || "DISCUSSION";
     let taskId: any = null;
 
+    const channelDoc = await ChannelModel.findById(channelId);
+
     // Detect task request / delegation pattern: "please review", "find keywords", "create", "@Clone"
     const lowerContent = content.toLowerCase();
     const isTaskOrDelegation =
@@ -192,25 +205,37 @@ export async function channelsRoutes(app: FastifyInstance) {
       .populate("mentions", "name role avatarUrl")
       .populate("taskId", "title status priority assignedEmployeeId");
 
-    // If mentioned clone exists, call Mistral AI for a real LLM-powered response
+    // If mentioned clone exists, call LLM for a persona-styled response
     if (mentions && mentions.length > 0) {
       const mentionedEmployeeId = mentions[0];
       const targetEmployee = await AIEmployeeModel.findById(mentionedEmployeeId);
 
       if (targetEmployee) {
+        // Enforce team scoping: if TEAM channel and clone is not in this team, redirect to cross-team channel
+        const isTeamChannel = channelDoc?.type === "TEAM";
+        const cloneTeamId = targetEmployee.teamId ? targetEmployee.teamId.toString() : null;
+        const channelTeamId = channelDoc?.teamId ? channelDoc.teamId.toString() : null;
+        const isMemberOfTeam = !isTeamChannel || !channelTeamId || cloneTeamId === channelTeamId;
+
         setTimeout(async () => {
           try {
-            const systemPrompt = cloneSystemPrompt(targetEmployee);
-            const userMsg = `Channel message from @${populatedMessage?.senderId?.name || "team"}: "${content}"`;
-            const aiReply = await callMistral(
-              targetEmployee,
-              [{ role: "system", content: systemPrompt }, { role: "user", content: userMsg }]
-            );
-            const finalReply = aiReply || (
-              messageType === "TASK_REQUEST"
-                ? `Understood @${populatedMessage?.senderId?.name || "team"}. I've logged the task and will begin execution now.`
-                : `Got it @${populatedMessage?.senderId?.name || "team"}. On it.`
-            );
+            let finalReply = "";
+
+            if (!isMemberOfTeam) {
+              finalReply = `Hey @${populatedMessage?.senderId?.name || "team"}! I'm assigned to a different team. For cross-department requests, catch me in the cross-team channel!`;
+            } else {
+              const systemPrompt = cloneSystemPrompt(targetEmployee, channelDoc?.type);
+              const userMsg = `Message in channel from @${populatedMessage?.senderId?.name || "teammate"}: "${content}"`;
+              const aiReply = await callMistral(
+                targetEmployee,
+                [{ role: "system", content: systemPrompt }, { role: "user", content: userMsg }]
+              );
+              finalReply = aiReply || (
+                messageType === "TASK_REQUEST"
+                  ? `On it @${populatedMessage?.senderId?.name || "team"}. I'll get this handled right away.`
+                  : `Got it @${populatedMessage?.senderId?.name || "team"}.`
+              );
+            }
 
             await ChannelMessageModel.create({
               companyId, channelId,
@@ -225,24 +250,32 @@ export async function channelsRoutes(app: FastifyInstance) {
         }, 800);
       }
     } else {
-      // No explicit mention — if this message is from a human (prefixed with "[Name]:"),
-      // find the best available clone in the channel to respond
+      // No explicit mention — if message is from a human, find a clone belonging to THIS team (or cross-team channel)
       const isHumanMessage = content.startsWith("[") && content.includes("]: ");
       if (isHumanMessage) {
-        const channelDoc = await ChannelModel.findById(channelId);
-        // Pick the first active employee in this company as the responding clone
-        const respondingClone = await AIEmployeeModel.findOne({
-          companyId,
-          status: { $ne: "PAUSED" },
-        });
+        const isTeamChannel = channelDoc?.type === "TEAM";
+        const channelTeamId = channelDoc?.teamId ? channelDoc.teamId.toString() : null;
+
+        // Query active clones belonging strictly to this team if it's a TEAM channel
+        const queryFilter: any = { companyId, status: { $ne: "PAUSED" } };
+        if (isTeamChannel && channelTeamId) {
+          queryFilter.teamId = channelTeamId;
+        }
+
+        let respondingClone = await AIEmployeeModel.findOne(queryFilter);
+        // Fallback to any active clone if cross-team channel
+        if (!respondingClone && !isTeamChannel) {
+          respondingClone = await AIEmployeeModel.findOne({ companyId, status: { $ne: "PAUSED" } });
+        }
 
         if (respondingClone) {
           setTimeout(async () => {
             try {
               const humanText = content.replace(/^\[[^\]]+\]:\s/, "");
+              const systemPrompt = cloneSystemPrompt(respondingClone, channelDoc?.type);
               const aiReply = await callMistral(
                 respondingClone,
-                [{ role: "system", content: cloneSystemPrompt(respondingClone) }, { role: "user", content: humanText }]
+                [{ role: "system", content: systemPrompt }, { role: "user", content: humanText }]
               );
               if (aiReply) {
                 await ChannelMessageModel.create({
