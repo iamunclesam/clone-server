@@ -60,9 +60,9 @@ export default function EmployeesPage() {
         <Link
           href="/employees/new"
           id="create-employee-btn"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors cursor-pointer"
+          className="w-auto md:inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-center text-white text-xs font-semibold transition-colors cursor-pointer"
         >
-          + Hire AI Employee
+          Hire AI Employee
         </Link>
       </div>
 

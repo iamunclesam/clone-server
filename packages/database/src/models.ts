@@ -15,11 +15,15 @@ export enum EmployeeStatus {
 }
 
 export enum TaskStatus {
+  BACKLOG = "BACKLOG",
+  PLANNED = "PLANNED",
   PENDING = "PENDING",
   IN_PROGRESS = "IN_PROGRESS",
+  BLOCKED = "BLOCKED",
   WAITING_FOR_APPROVAL = "WAITING_FOR_APPROVAL",
   COMPLETED = "COMPLETED",
   FAILED = "FAILED",
+  CANCELLED = "CANCELLED",
 }
 
 export enum TaskPriority {

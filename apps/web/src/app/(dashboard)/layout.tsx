@@ -165,14 +165,14 @@ const NAV_GROUPS: NavGroup[] = [
 ];
 
 const CMD_ACTIONS = [
-  { icon: "👤", label: "Hire new AI employee",      hint: "N E", href: "/employees/new" },
-  { icon: "⚡", label: "Create task",               hint: "N T", href: "/tasks/new" },
-  { icon: "🔀", label: "Build workflow",            hint: "N W", href: "/workflows" },
-  { icon: "⚡", label: "Runtime Engine",            hint: "",    href: "/runtime" },
-  { icon: "🔗", label: "Connect app integration",  hint: "N I", href: "/integrations" },
-  { icon: "🛡️", label: "Review pending approvals",  hint: "",    href: "/approvals" },
-  { icon: "📋", label: "Open activity log",        hint: "",    href: "/activity" },
-  { icon: "⚙️", label: "Settings",                 hint: "G S", href: "/settings" },
+  { icon: "👤", label: "Hire new AI employee", hint: "N E", href: "/employees/new" },
+  { icon: "⚡", label: "Create task", hint: "N T", href: "/tasks/new" },
+  { icon: "🔀", label: "Build workflow", hint: "N W", href: "/workflows" },
+  { icon: "⚡", label: "Runtime Engine", hint: "", href: "/runtime" },
+  { icon: "🔗", label: "Connect app integration", hint: "N I", href: "/integrations" },
+  { icon: "🛡️", label: "Review pending approvals", hint: "", href: "/approvals" },
+  { icon: "📋", label: "Open activity log", hint: "", href: "/activity" },
+  { icon: "⚙️", label: "Settings", hint: "G S", href: "/settings" },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -250,9 +250,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* ─── LEFT SIDEBAR ──────────────────────────────────────────────── */}
       <aside
-        className={`fixed inset-y-0 left-0 z-30 flex flex-col bg-white border-r border-slate-200/70 transition-transform duration-200 lg:static lg:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed inset-y-0 left-0 z-30 flex flex-col bg-white border-r border-slate-200/70 transition-transform duration-200 lg:static lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
         style={{ width: 240 }}
       >
         {/* Brand */}
@@ -319,9 +318,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         switchCompany(c.id);
                         setWsDropdownOpen(false);
                       }}
-                      className={`flex items-center justify-between w-full px-2 py-1.5 text-[12px] transition-colors cursor-pointer ${
-                        isActive ? "bg-blue-50 text-blue-700 font-bold" : "text-slate-700 hover:bg-slate-50"
-                      }`}
+                      className={`flex items-center justify-between w-full px-2 py-1.5 text-[12px] transition-colors cursor-pointer ${isActive ? "bg-blue-50 text-blue-700 font-bold" : "text-slate-700 hover:bg-slate-50"
+                        }`}
                     >
                       <div className="flex items-center gap-2 truncate">
                         <span className="w-4 h-4 bg-slate-200 text-slate-700 flex items-center justify-center text-[9px] font-mono">
@@ -369,11 +367,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       key={item.href}
                       href={item.href}
                       onClick={() => setSidebarOpen(false)}
-                      className={`relative flex items-center gap-2.5 px-2.5 py-2 text-[13px] font-medium transition-all duration-100 ${
-                        active
+                      className={`relative flex items-center gap-2.5 px-2.5 py-2 text-[13px] font-medium transition-all duration-100 ${active
                           ? "bg-slate-100 text-slate-900"
                           : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                      }`}
+                        }`}
                     >
                       <span className={`shrink-0 ${active ? "text-slate-700" : "text-slate-400"}`}>
                         {item.icon}
@@ -434,78 +431,156 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
         {/* Top header */}
-        <header className="h-14 bg-white border-b border-slate-200/80 px-6 flex items-center justify-between shrink-0 font-sans shadow-xs">
 
-          {/* Left section: Mobile hamburger + Desktop Page Breadcrumb & Live Status */}
-          <div className="flex items-center gap-3 min-w-0">
+        {/* Top header */}
+        <header className="h-14 sm:h-16 bg-white border-b border-slate-200/80 px-3 sm:px-4 lg:px-6 flex items-center justify-between shrink-0 font-sans shadow-xs">
+
+          {/* Left section */}
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+
             {/* Mobile hamburger */}
             <button
-              className="lg:hidden text-slate-400 hover:text-slate-700 transition-colors p-1"
+              className="lg:hidden w-9 h-9 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors rounded-md shrink-0"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              <svg
+                className="w-[19px] h-[19px]"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
 
-            {/* Desktop Breadcrumb & Workspace context */}
-            <div className="hidden lg:flex items-center gap-2.5 text-xs font-mono">
-              <span className="font-bold text-slate-900 tracking-tight">
-                {pathname === "/overview" ? "Command Center" : pathname.replace("/", "").replace(/-/g, " ").toUpperCase()}
+            {/* Mobile brand */}
+            <Link
+              href="/overview"
+              className="lg:hidden flex items-center gap-2 min-w-0"
+            >
+              <div className="w-7 h-7 bg-slate-900 flex items-center justify-center rounded-[5px] shrink-0 overflow-hidden">
+                <img
+                  src="https://res.cloudinary.com/dsaqsxtup/image/upload/v1789836149/clone-icon_p3adnc.png"
+                  className="w-full h-full object-cover"
+                  alt="Clone"
+                />
+              </div>
+
+              <span className="text-[15px] font-semibold tracking-tight text-slate-900">
+                Clone
               </span>
+            </Link>
+
+            {/* Desktop Breadcrumb */}
+            <div className="hidden lg:flex items-center gap-2.5 text-xs font-mono min-w-0">
+              <span className="font-bold text-slate-900 tracking-tight">
+                {pathname === "/overview"
+                  ? "Command Center"
+                  : pathname
+                    .replace("/", "")
+                    .replace(/-/g, " ")
+                    .toUpperCase()}
+              </span>
+
               <span className="text-slate-300">/</span>
+
               <span className="text-slate-500 font-semibold truncate max-w-[180px]">
                 {activeCompany?.name || "Your Workspace"}
               </span>
-              <span className="px-2 py-0.5 border border-emerald-200 bg-emerald-50 text-emerald-700 font-bold text-[10px] flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                API LIVE
-              </span>
             </div>
+
+            {/* Mobile page title */}
+            {/* <div className="lg:hidden flex items-center min-w-0 ml-1">
+              <span className="w-px h-5 bg-slate-200 mr-2.5" />
+
+              <span className="text-[12px] sm:text-[13px] font-semibold text-slate-600 truncate max-w-[120px] sm:max-w-[220px]">
+                {pathname === "/overview"
+                  ? "Command Center"
+                  : pathname
+                    .replace("/", "")
+                    .replace(/-/g, " ")
+                    .replace(/\b\w/g, (c) => c.toUpperCase())}
+              </span>
+            </div> */}
           </div>
 
-          {/* Right section: Actions & Quick User Controls */}
-          <div className="flex items-center gap-2.5">
+          {/* Right section */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
 
-            {/* Create Workspace Button */}
+            {/* Workspace button — desktop/tablet */}
             <button
               onClick={() => setCreateWsModalOpen(true)}
-              className="hidden sm:flex items-center gap-1.5 h-8 px-3 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[12px] font-semibold font-mono transition-colors cursor-pointer"
+              className="hidden md:flex items-center gap-1.5 h-8 px-3 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[12px] font-semibold font-mono transition-colors cursor-pointer rounded-md"
             >
-              <svg className="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" />
+              <svg
+                className="w-3 h-3 text-slate-500"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 5v14M5 12h14"
+                />
               </svg>
+
               Workspace
             </button>
 
-            {/* Hire AI Employee CTA */}
+            {/* Hire AI Employee */}
             <Link
               href="/employees/new"
-              className="flex items-center gap-1.5 h-8 px-3.5 bg-blue-600 hover:bg-blue-700 text-white text-[12px] font-semibold font-mono transition-all shadow-xs cursor-pointer"
+              title="Hire AI Employee"
+              className="flex items-center justify-center gap-1.5 h-9 sm:h-8 w-9 sm:w-auto sm:px-3.5 bg-blue-600 hover:bg-blue-700 text-white text-[12px] font-semibold font-mono transition-all shadow-xs cursor-pointer rounded-md"
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" />
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 5v14M5 12h14"
+                />
               </svg>
-              Hire AI Employee
-            </Link>
 
-            {/* Approvals badge */}
-            <Link
-              href="/approvals"
-              className="relative flex items-center gap-1.5 h-8 px-3 border border-amber-200 bg-amber-50 text-amber-800 text-[12px] font-mono font-medium hover:bg-amber-100 transition-colors"
-            >
-              <svg className="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              <span>Approvals</span>
+              <span className="hidden sm:inline">
+                Hire AI Employee
+              </span>
             </Link>
 
             {/* Notifications */}
-            <button className="w-8 h-8 border border-slate-200 bg-white text-slate-400 hover:text-slate-700 hover:border-slate-300 flex items-center justify-center transition-colors cursor-pointer">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            <button
+              aria-label="Notifications"
+              className="relative w-9 h-9 sm:w-8 sm:h-8 border border-slate-200 bg-white text-slate-400 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50 flex items-center justify-center transition-colors cursor-pointer rounded-md"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                />
               </svg>
+
+              {/* Notification indicator */}
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-blue-600 rounded-full" />
             </button>
           </div>
         </header>

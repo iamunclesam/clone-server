@@ -45,33 +45,129 @@ export async function approvalsRoutes(app: FastifyInstance) {
       data: { status: "APPROVED", approvedByUserId: request.user!.userId, handledAt: new Date() },
     });
 
-    // Execute approved high-risk tool action
+    // Execute approved high-risk tool action — supports all integration providers
     let executionResult: any = null;
-    if (approval.toolName === "gmail.send_message" || approval.actionName === "SEND_EMAIL_DISPATCH") {
-      try {
-        let proposedParams: any = {};
-        if (approval.proposedParams) {
-          proposedParams = typeof approval.proposedParams === "string" ? JSON.parse(approval.proposedParams) : approval.proposedParams;
-        }
+    try {
+      const { createDecipheriv, createCipheriv, randomBytes } = await import("crypto");
+      const ENCRYPTION_KEY_HEX = process.env.INTEGRATION_TOKEN_ENCRYPTION_KEY || "0".repeat(64);
 
+      let proposedParams: any = {};
+      if (approval.proposedParams) {
+        proposedParams = typeof approval.proposedParams === "string" ? JSON.parse(approval.proposedParams) : approval.proposedParams;
+      }
+
+      const toolName = approval.toolName || "";
+      const providerFromTool = (typeof toolName === "string" && toolName.includes(".")) ? toolName.split(".")[0] : "";
+
+      // Map provider -> search provider (handle aliases)
+      const providerSearchMap: Record<string, string> = {
+        gmail: "gmail",
+        calendar: "calendar",
+        notion: "notion",
+        slack: "slack",
+        linear: "linear",
+        hubspot: "hubspot",
+        github: "github",
+      };
+      const searchProvider = providerSearchMap[providerFromTool] || providerFromTool || "";
+
+      if (searchProvider) {
+        const connectedAccounts = await prisma.connectedAccount.findMany({
+          where: { companyId, provider: searchProvider, status: "CONNECTED" },
+        });
+
+        if (connectedAccounts.length > 0) {
+          const acc = connectedAccounts[0];
+
+          // Decrypt access token using AES-256-GCM
+          const ENCRYPTION_KEY = Buffer.from(ENCRYPTION_KEY_HEX, "hex");
+          let accessToken = "";
+          let refreshToken = "";
+          try {
+            const buf = Buffer.from(acc.encryptedToken, "base64");
+            const iv = buf.subarray(0, 16);
+            const tag = buf.subarray(16, 32);
+            const encrypted = buf.subarray(32);
+            const decipher = createDecipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
+            decipher.setAuthTag(tag);
+            accessToken = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
+          } catch {}
+
+          // Decrypt refresh token
+          if (acc.refreshToken) {
+            try {
+              const rbuf = Buffer.from(acc.refreshToken, "base64");
+              const riv = rbuf.subarray(0, 16);
+              const rtag = rbuf.subarray(16, 32);
+              const renc = rbuf.subarray(32);
+              const rdec = createDecipheriv("aes-256-gcm", ENCRYPTION_KEY, riv);
+              rdec.setAuthTag(rtag);
+              refreshToken = Buffer.concat([rdec.update(renc), rdec.final()]).toString("utf8");
+            } catch {}
+          }
+
+          if (accessToken) {
+            const { IntegrationRegistry } = await import("@clone/integration-framework");
+            const registry = IntegrationRegistry.getInstance();
+            const provider = registry.getProvider(searchProvider);
+            if (provider) {
+              // Build arguments from proposed params + tokens
+              const toolArgs: Record<string, any> = {
+                ...(proposedParams || {}),
+                accessToken,
+              };
+              if (refreshToken) toolArgs.refreshToken = refreshToken;
+
+              executionResult = await provider.executeTool({
+                connectionId: acc.id,
+                toolName,
+                arguments: toolArgs,
+                employeeId: approval.employeeId,
+                companyId,
+              });
+
+              console.log(`🚀 Executed approved action ${toolName}:`, executionResult?.success ? "SUCCESS" : "FAILED", executionResult?.success ? "" : executionResult?.error);
+
+              // If a fresh access token was obtained via refresh, persist it back to DB
+              const freshToken = executionResult?.data?.freshToken;
+              if (freshToken && typeof freshToken === "string" && freshToken !== accessToken) {
+                try {
+                  const newIv = randomBytes(16);
+                  const cipher = createCipheriv("aes-256-gcm", ENCRYPTION_KEY, newIv);
+                  const enc = Buffer.concat([cipher.update(freshToken, "utf8"), cipher.final()]);
+                  const newEncryptedToken = Buffer.concat([newIv, cipher.getAuthTag(), enc]).toString("base64");
+                  await prisma.connectedAccount.update({
+                    where: { id: acc.id },
+                    data: { encryptedToken: newEncryptedToken },
+                  }).catch(() => null);
+                  console.log(`🔑 Refreshed ${searchProvider} access token saved to DB for connection:`, acc.id);
+                } catch {}
+              }
+            } else {
+              console.warn(`Approval: No provider registered for "${searchProvider}"`);
+            }
+          } else {
+            console.warn(`Approval: Could not decrypt access token for connection ${acc.id} (${searchProvider})`);
+          }
+        } else {
+          console.warn(`Approval: No connected "${searchProvider}" accounts found for company ${companyId}`);
+        }
+      } else if (approval.actionName === "SEND_EMAIL_DISPATCH" && !toolName) {
+        // Legacy fallback for old approval records without toolName
         const connectedAccounts = await prisma.connectedAccount.findMany({
           where: { companyId, provider: "gmail", status: "CONNECTED" },
         });
-
         if (connectedAccounts.length > 0 && proposedParams.to) {
           const acc = connectedAccounts[0];
-          // Decrypt access token
-          const ENCRYPTION_KEY = Buffer.from(process.env.INTEGRATION_TOKEN_ENCRYPTION_KEY || "0".repeat(64), "hex");
+          const ENCRYPTION_KEY = Buffer.from(ENCRYPTION_KEY_HEX, "hex");
           const buf = Buffer.from(acc.encryptedToken, "base64");
           const iv = buf.subarray(0, 16);
           const tag = buf.subarray(16, 32);
           const encrypted = buf.subarray(32);
-          const { createDecipheriv, createCipheriv, randomBytes } = await import("crypto");
           const decipher = createDecipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
           decipher.setAuthTag(tag);
           const accessToken = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
 
-          // Decrypt refresh token if available
           let refreshToken = "";
           if (acc.refreshToken) {
             try {
@@ -103,9 +199,8 @@ export async function approvalsRoutes(app: FastifyInstance) {
                 employeeId: approval.employeeId,
                 companyId,
               });
-              console.log("🚀 Executed approved Gmail message dispatch:", executionResult);
+              console.log("🚀 Executed legacy SEND_EMAIL_DISPATCH:", executionResult);
 
-              // If a fresh access token was obtained via refresh, persist it back to DB
               const freshToken = executionResult?.data?.freshToken;
               if (freshToken) {
                 const newIv = randomBytes(16);
@@ -116,14 +211,14 @@ export async function approvalsRoutes(app: FastifyInstance) {
                   where: { id: acc.id },
                   data: { encryptedToken: newEncryptedToken },
                 }).catch(() => null);
-                console.log("🔑 Refreshed Gmail access token saved to DB for connection:", acc.id);
+                console.log("🔑 Refreshed Gmail access token saved (legacy path)");
               }
             }
           }
         }
-      } catch (execErr: any) {
-        console.error("Error executing approved action:", execErr);
       }
+    } catch (execErr: any) {
+      console.error("Error executing approved action:", execErr?.message || execErr);
     }
 
     await prisma.auditLog.create({ data: { companyId, userId: request.user!.userId, action: "APPROVAL_GRANTED", resource: approval.toolName, result: "SUCCESS", metadata: JSON.stringify({ approvalId, riskLevel: approval.riskLevel, executionResult }) } });

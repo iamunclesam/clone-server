@@ -510,7 +510,7 @@ export default function OverviewPage() {
 
           {/* ─── TOOL CONNECTIONS & CANVAS STRIP ──────────────────────────────── */}
           <div className="bg-white border border-slate-200 p-4 space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="grid grid-cols-1 gap-3 md:gap-0 md:flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono">
                   Connected Tool Integrations ({integrations.length})
@@ -551,9 +551,9 @@ export default function OverviewPage() {
           <div className="bg-white border border-slate-200">
             <button
               onClick={() => setWorkflowOpen(!workflowOpen)}
-              className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer"
+              className="w-full p-4 grid grid-cols-1 gap-3 md:flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer"
             >
-              <div className="flex items-center gap-3">
+              <div className="md:flex items-center gap-3">
                 <span className="w-2.5 h-2.5 bg-blue-600" />
                 <div className="text-left">
                   <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono">

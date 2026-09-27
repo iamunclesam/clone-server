@@ -40,7 +40,7 @@ export default function TeamsPage() {
   }, [loadTeams]);
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6 font-sans">
+    <div className="p-2 md:p-6 max-w-[1600px] mx-auto space-y-6 font-sans">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 p-4">
         <div>
@@ -96,21 +96,32 @@ export default function TeamsPage() {
           {teams.map((team) => (
             <div
               key={team.id}
-              className="bg-white border border-slate-200 p-5 flex flex-col justify-between hover:border-slate-300 transition-all space-y-4"
-            >              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 border bg-emerald-50 text-emerald-700 border-emerald-200">
+              className="bg-white border border-slate-200 p-4 sm:p-5 flex flex-col justify-between hover:border-slate-300 transition-all space-y-4"
+            >
+              <div className="space-y-3">
+                {/* Status + Member Count */}
+                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2">
+                  <span className="w-fit text-[10px] font-mono font-bold px-2 py-0.5 border bg-emerald-50 text-emerald-700 border-emerald-200">
                     ● {team.status || "ACTIVE"}
                   </span>
-                  <span className="text-xs text-slate-500 font-mono">{team.memberCount} assigned employee{team.memberCount !== 1 ? "s" : ""}</span>
+
+                  <span className="text-[11px] sm:text-xs text-slate-500 font-mono">
+                    {team.memberCount} assigned employee
+                    {team.memberCount !== 1 ? "s" : ""}
+                  </span>
                 </div>
 
+                {/* Team Info */}
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">
-                    <Link href={`/teams/${team.id}`} className="hover:text-blue-600 transition-colors">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
+                    <Link
+                      href={`/teams/${team.id}`}
+                      className="hover:text-blue-600 transition-colors"
+                    >
                       {team.name}
                     </Link>
                   </h3>
+
                   {team.description && (
                     <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                       {team.description}
@@ -120,48 +131,63 @@ export default function TeamsPage() {
 
                 {/* Team Directives */}
                 {team.instructions && (
-                  <div className="p-2.5 bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-700 leading-relaxed">
-                    <span className="font-bold text-slate-900 uppercase block text-[9px] text-slate-400 mb-0.5">DIRECTIVES & SLA:</span>
+                  <div className="p-2.5 sm:p-3 bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-700 leading-relaxed break-words">
+                    <span className="font-bold text-slate-900 uppercase block text-[9px] text-slate-400 mb-0.5">
+                      DIRECTIVES & SLA:
+                    </span>
                     {team.instructions}
                   </div>
                 )}
 
                 {/* Members */}
                 <div className="pt-2">
-                  <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center justify-between">
+                  <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 mb-2 flex flex-col xs:flex-row xs:items-center xs:justify-between gap-1.5">
                     <span>Assigned Roster ({team.members.length})</span>
+
                     <button
                       onClick={() => setManageTeam(team)}
-                      className="text-blue-600 font-bold hover:underline cursor-pointer lowercase text-[11px]"
+                      className="text-blue-600 font-bold hover:underline cursor-pointer lowercase text-[11px] w-fit"
                     >
                       + assign / edit
                     </button>
                   </div>
 
                   {team.members.length === 0 ? (
-                    <div className="text-xs font-mono text-slate-400 italic p-3 bg-slate-50 border border-slate-100 text-center">
+                    <div className="text-xs font-mono text-slate-400 italic p-3 bg-slate-50 border border-slate-100 text-center leading-relaxed">
                       No AI employees assigned yet. Click "+ assign / edit" to add roster.
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 flex-wrap">
                       {team.members.map((m) => {
-                        const isLead = team.leadEmployeeId === m.id || team.leadEmployee?.id === m.id;
+                        const isLead =
+                          team.leadEmployeeId === m.id ||
+                          team.leadEmployee?.id === m.id;
+
                         return (
                           <Link
                             key={m.id}
                             href={`/employees/${m.id}`}
-                            className={`flex items-center gap-2 px-2.5 py-1 border transition-colors ${
-                              isLead ? "bg-amber-50/80 border-amber-200" : "bg-slate-50 hover:bg-slate-100 border-slate-200"
-                            }`}
+                            className={`flex items-center gap-2 px-2.5 py-1.5 border transition-colors max-w-full ${isLead
+                                ? "bg-amber-50/80 border-amber-200"
+                                : "bg-slate-50 hover:bg-slate-100 border-slate-200"
+                              }`}
                           >
                             <div className="w-5 h-5 bg-slate-900 text-white font-mono text-[10px] font-bold flex items-center justify-center shrink-0">
                               {m.name[0]}
                             </div>
-                            <span className="text-xs font-mono text-slate-800 font-semibold">{m.name}</span>
+
+                            <span className="text-xs font-mono text-slate-800 font-semibold truncate max-w-[120px] sm:max-w-none">
+                              {m.name}
+                            </span>
+
                             {isLead ? (
-                              <span className="text-[9px] font-mono font-bold text-amber-800">👑 LEAD</span>
+                              <span className="text-[9px] font-mono font-bold text-amber-800 shrink-0">
+                                👑 LEAD
+                              </span>
                             ) : (
-                              <span className="text-[10px] font-mono text-slate-400">({m.role})</span>
+                              <span className="text-[10px] font-mono text-slate-400 truncate max-w-[80px]">
+                                ({m.role})
+                              </span>
                             )}
                           </Link>
                         );
@@ -171,18 +197,26 @@ export default function TeamsPage() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-mono">
-                <span className="text-slate-500">Lead: <strong className="text-slate-900">{team.lead}</strong></span>
-                <div className="flex items-center gap-2">
+              {/* Footer / Actions */}
+              <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs font-mono">
+                <span className="text-slate-500 truncate">
+                  Lead:{" "}
+                  <strong className="text-slate-900">
+                    {team.lead}
+                  </strong>
+                </span>
+
+                <div className="flex flex-col xs:flex-row gap-2 w-full sm:w-auto">
                   <button
                     onClick={() => setManageTeam(team)}
-                    className="px-3 py-1 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold text-[11px] cursor-pointer transition-colors"
+                    className="w-full sm:w-auto px-3 py-2 sm:py-1 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-bold text-[11px] cursor-pointer transition-colors"
                   >
                     Manage Roster
                   </button>
+
                   <Link
                     href={`/teams/${team.id}`}
-                    className="px-3 py-1 bg-slate-900 hover:bg-slate-700 text-white font-bold text-[11px] transition-colors"
+                    className="w-full sm:w-auto px-3 py-2 sm:py-1 bg-slate-900 hover:bg-slate-700 text-white font-bold text-[11px] transition-colors text-center"
                   >
                     View Details →
                   </Link>

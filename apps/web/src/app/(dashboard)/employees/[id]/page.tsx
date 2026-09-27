@@ -890,7 +890,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   const connectedProviders = companyIntegrations.filter((c) => c.status === "CONNECTED").map((c) => c.provider);
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6 font-sans">
+    <div className="p-2 md:p-6 max-w-[1600px] mx-auto space-y-6 font-sans">
       {/* Header Breadcrumb & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 p-4">
         <div>
@@ -912,7 +912,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                 </span> */}
               </div>
               <p className="text-xs font-mono text-slate-500 mt-0.5">
-                Role: {employee?.role || "Agent"} • Workspace: {activeCompany?.slug || "acme"} 
+                Role: {employee?.role || "Agent"} • Workspace: {activeCompany?.slug || "acme"}
               </p>
             </div>
           </div>
@@ -930,7 +930,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
             href={`/tasks/new?employeeId=${employee?.id}`}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors cursor-pointer"
           >
-            + Assign Task
+            Assign Task
           </Link>
         </div>
       </div>
@@ -942,8 +942,8 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-3.5 py-1.5 text-xs font-mono font-medium transition-colors cursor-pointer border whitespace-nowrap ${activeTab === tab
-                ? "bg-slate-900 text-white border-slate-900"
-                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+              ? "bg-slate-900 text-white border-slate-900"
+              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
               }`}
           >
             {tab}
@@ -958,7 +958,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
             <div className="bg-white border border-slate-200 p-6 space-y-4">
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono flex items-center justify-between">
                 <span>System Profile</span>
-                
+
               </h3>
 
               <div className="space-y-2 font-mono text-xs">
@@ -1054,8 +1054,8 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                       key={conv.id}
                       onClick={() => selectConversation(conv.id)}
                       className={`p-2.5 border text-xs font-mono transition-colors cursor-pointer flex items-center justify-between group ${activeConversationId === conv.id
-                          ? "bg-slate-900 text-white border-slate-900"
-                          : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                        ? "bg-slate-900 text-white border-slate-900"
+                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
                         }`}
                     >
                       <div className="truncate flex-1 mr-2">
@@ -1089,7 +1089,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-xs font-mono font-bold text-slate-900">
-                 {employee?.name}
+                  {employee?.name}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -1139,8 +1139,8 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                   </div>
                   <div
                     className={`p-4 max-w-[85%] rounded-none leading-relaxed ${msg.sender === "user"
-                        ? "bg-slate-900 text-white"
-                        : "bg-slate-50 text-slate-800 border border-slate-200"
+                      ? "bg-slate-900 text-white"
+                      : "bg-slate-50 text-slate-800 border border-slate-200"
                       }`}
                   >
                     <FormattedText text={msg.text} isUser={msg.sender === "user"} />
@@ -1240,7 +1240,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
             </div> */}
 
             {/* Quick Prompts Suggestions */}
-            <div className="px-6 py-2 border-t border-slate-100 bg-slate-50/50 flex flex-wrap gap-2">
+            {/* <div className="px-6 py-2 border-t border-slate-100 bg-slate-50/50 flex flex-wrap gap-2">
               <span className="text-[10px] font-mono text-slate-400 self-center">Quick queries:</span>
               <button
                 onClick={() => handleSendMessage("Check our connected Gmail account for unread emails or support messages")}
@@ -1260,7 +1260,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               >
                 ⚡ List active permissions
               </button>
-            </div>
+            </div> */}
 
             {/* Input Bar */}
             <div className="p-4 border-t border-slate-200 flex items-center gap-2">
@@ -1268,8 +1268,8 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                 onClick={handleToggleVoiceInput}
                 disabled={!voiceInputSupported || chatLoading}
                 className={`px-4 py-2.5 border text-xs font-mono font-bold transition-colors cursor-pointer disabled:opacity-40 ${isListening
-                    ? "bg-red-600 text-white border-red-600 hover:bg-red-700"
-                    : "bg-white text-slate-800 border-slate-200 hover:bg-slate-50"
+                  ? "bg-red-600 text-white border-red-600 hover:bg-red-700"
+                  : "bg-white text-slate-800 border-slate-200 hover:bg-slate-50"
                   }`}
               >
                 {isListening ? "Listening..." : "Mic"}
@@ -1343,7 +1343,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
       {/* Tab: Connected Applications */}
       {activeTab === "Connected Applications" && (
         <div className="space-y-4">
-          <div className="bg-white border border-slate-200 p-5 flex items-start justify-between gap-4">
+          <div className="bg-white border border-slate-200 p-5 grid grid-cols-1 gap-2 md:flex items-start justify-between gap-4">
             <div>
               <h3 className="text-[14px] font-bold text-slate-900">Connected Applications</h3>
               <p className="text-[12px] text-slate-500 mt-1">
@@ -1421,8 +1421,8 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                       onClick={() => isWorkspaceConnected && handleToggleProvider(provider, !isAssigned)}
                       disabled={!isWorkspaceConnected}
                       className={`shrink-0 w-11 h-6 rounded-full border-2 transition-all duration-150 relative ${isAssigned && isWorkspaceConnected
-                          ? "bg-slate-900 border-slate-900"
-                          : "bg-slate-100 border-slate-300"
+                        ? "bg-slate-900 border-slate-900"
+                        : "bg-slate-100 border-slate-300"
                         } disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer`}
                       title={!isWorkspaceConnected ? "Connect this integration in workspace settings first" : ""}
                     >
@@ -1441,8 +1441,8 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                         <button
                           onClick={() => handleProviderAccessMode(provider, false)}
                           className={`px-2.5 py-1 text-[11px] font-semibold border transition-colors ${!hasWrite
-                              ? "bg-slate-900 text-white border-slate-900"
-                              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                            ? "bg-slate-900 text-white border-slate-900"
+                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
                             }`}
                         >
                           Read-only
@@ -1450,8 +1450,8 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                         <button
                           onClick={() => handleProviderAccessMode(provider, true)}
                           className={`px-2.5 py-1 text-[11px] font-semibold border transition-colors ${hasWrite
-                              ? "bg-slate-900 text-white border-slate-900"
-                              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                            ? "bg-slate-900 text-white border-slate-900"
+                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
                             }`}
                         >
                           Full access
@@ -1481,34 +1481,52 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
       )}
 
       {/* Tab: Permissions & Rules */}
+
       {activeTab === "Permissions & Rules" && (
         <div className="space-y-4">
-          <div className="bg-white border border-slate-200 p-5 flex items-start justify-between gap-4">
-            <div>
-              <h3 className="text-[14px] font-bold text-slate-900">Permissions & Rules</h3>
-              <p className="text-[12px] text-slate-500 mt-1">
-                Configure exactly what <strong>{employee?.name}</strong> can do — per action, with write access and approval requirements.
-                Only assigned integrations are shown.
-              </p>
+
+          {/* Header */}
+          <div className="bg-white border border-slate-200 p-4 sm:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="min-w-0">
+                <h3 className="text-[14px] font-bold text-slate-900">
+                  Permissions & Rules
+                </h3>
+
+                <p className="text-[12px] text-slate-500 mt-1 leading-relaxed max-w-3xl">
+                  Configure exactly what <strong>{employee?.name}</strong> can do —
+                  per action, with write access and approval requirements.
+                  Only assigned integrations are shown.
+                </p>
+              </div>
+
+              <button
+                onClick={handleSavePermissions}
+                disabled={savingPermissions}
+                className="w-full sm:w-auto shrink-0 px-4 py-2.5 sm:py-2 bg-slate-900 text-white text-[12px] font-semibold hover:bg-slate-700 disabled:opacity-50 transition-colors"
+              >
+                {savingPermissions
+                  ? "Saving…"
+                  : permSaveSuccess
+                    ? "✓ Saved!"
+                    : "Save Rules"}
+              </button>
             </div>
-            <button
-              onClick={handleSavePermissions}
-              disabled={savingPermissions}
-              className="shrink-0 px-4 py-2 bg-slate-900 text-white text-[12px] font-semibold hover:bg-slate-700 disabled:opacity-50 transition-colors"
-            >
-              {savingPermissions ? "Saving…" : permSaveSuccess ? "✓ Saved!" : "Save Rules"}
-            </button>
           </div>
 
+          {/* Save success */}
           {permSaveSuccess && (
-            <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-[12px] font-medium px-4 py-2">
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-[12px] font-medium px-4 py-2.5">
               ✓ Permission rules saved for {employee?.name}.
             </div>
           )}
 
           {assignedProviders.size === 0 ? (
-            <div className="bg-white border border-slate-200 p-10 text-center">
-              <div className="text-slate-400 text-[13px] mb-2">No integrations assigned yet.</div>
+            <div className="bg-white border border-slate-200 p-8 sm:p-10 text-center">
+              <div className="text-slate-400 text-[13px] mb-2">
+                No integrations assigned yet.
+              </div>
+
               <button
                 onClick={() => setActiveTab("Connected Applications")}
                 className="text-[12px] text-blue-600 hover:text-blue-800 font-medium"
@@ -1518,169 +1536,443 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
             </div>
           ) : (
             <div className="space-y-4">
+
               {/* Risk legend */}
-              <div className="bg-white border border-slate-200 p-3 flex items-center gap-4 flex-wrap">
-                <span className="text-[11px] text-slate-500 font-medium">Risk levels:</span>
-                {(["LOW", "MEDIUM", "HIGH", "CRITICAL"] as const).map((r) => (
-                  <span key={r} className={`text-[10px] font-mono font-bold px-2 py-0.5 border ${riskColor(r)}`}>{r}</span>
-                ))}
-                <span className="text-[10px] text-slate-400 ml-auto">
-                  Actions requiring approval are blocked until a human approves them.
-                </span>
+              <div className="bg-white border border-slate-200 p-3 sm:p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-4">
+
+                  <span className="text-[11px] text-slate-500 font-medium shrink-0">
+                    Risk levels:
+                  </span>
+
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {(["LOW", "MEDIUM", "HIGH", "CRITICAL"] as const).map((r) => (
+                      <span
+                        key={r}
+                        className={`text-[10px] font-mono font-bold px-2 py-0.5 border ${riskColor(r)}`}
+                      >
+                        {r}
+                      </span>
+                    ))}
+                  </div>
+
+                  <span className="text-[10px] text-slate-400 sm:ml-auto leading-relaxed">
+                    Actions requiring approval are blocked until a human approves them.
+                  </span>
+                </div>
               </div>
 
-              {PROVIDER_CATALOG.filter((p) => assignedProviders.has(p.id)).map((provider) => (
-                <div key={provider.id} className="bg-white border border-slate-200">
-                  {/* Provider header */}
-                  <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-3">
-                    <img
-                      src={provider.iconUrl}
-                      alt={provider.name}
-                      className="w-5 h-5 object-contain"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                    />
-                    <span className="text-[13px] font-bold text-slate-900">{provider.name}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">{provider.category}</span>
-                    <span className="text-[10px] font-mono ml-auto text-slate-400">
-                      {provider.actions.filter((a) => permissions[a.id]).length}/{provider.actions.length} actions enabled
-                    </span>
-                  </div>
+              {PROVIDER_CATALOG
+                .filter((p) => assignedProviders.has(p.id))
+                .map((provider) => (
+                  <div
+                    key={provider.id}
+                    className="bg-white border border-slate-200 overflow-hidden"
+                  >
 
-                  {/* Column headers */}
-                  <div className="grid grid-cols-[1fr_auto_auto_auto] gap-0 px-5 py-2 bg-slate-50 border-b border-slate-100 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
-                    <span>Action</span>
-                    <span className="w-20 text-center">Enabled</span>
-                    <span className="w-24 text-center">Write access</span>
-                    <span className="w-28 text-center">Req. approval</span>
-                  </div>
+                    {/* Provider header */}
+                    <div className="px-4 sm:px-5 py-3.5 border-b border-slate-100">
+                      <div className="flex items-center gap-3 min-w-0">
 
-                  {/* Action rows */}
-                  {provider.actions.map((action) => {
-                    const perm = permissions[action.id];
-                    const isEnabled = !!perm;
+                        <img
+                          src={provider.iconUrl}
+                          alt={provider.name}
+                          className="w-5 h-5 object-contain shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
+                          }}
+                        />
 
-                    const toggle = (field: "enabled" | "writeAccess" | "requiresApproval") => {
-                      setPermissions((prev) => {
-                        const next = { ...prev };
-                        if (field === "enabled") {
-                          if (isEnabled) {
-                            delete next[action.id];
-                          } else {
+                        <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
+                          <span className="text-[13px] font-bold text-slate-900">
+                            {provider.name}
+                          </span>
+
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {provider.category}
+                          </span>
+                        </div>
+
+                        <span className="text-[10px] font-mono text-slate-400 shrink-0">
+                          {provider.actions.filter(
+                            (a) => permissions[a.id]
+                          ).length}
+                          /{provider.actions.length}
+                          <span className="hidden sm:inline"> actions enabled</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Desktop column headers */}
+                    <div className="hidden md:grid grid-cols-[1fr_auto_auto_auto] gap-0 px-5 py-2 bg-slate-50 border-b border-slate-100 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
+                      <span>Action</span>
+                      <span className="w-20 text-center">Enabled</span>
+                      <span className="w-24 text-center">Write access</span>
+                      <span className="w-28 text-center">Req. approval</span>
+                    </div>
+
+                    {/* Action rows */}
+                    {provider.actions.map((action) => {
+                      const perm = permissions[action.id];
+                      const isEnabled = !!perm;
+
+                      const toggle = (
+                        field: "enabled" | "writeAccess" | "requiresApproval"
+                      ) => {
+                        setPermissions((prev) => {
+                          const next = { ...prev };
+
+                          if (field === "enabled") {
+                            if (isEnabled) {
+                              delete next[action.id];
+                            } else {
+                              next[action.id] = {
+                                toolName: action.id,
+                                writeAccess: action.write,
+                                requiresApproval: action.defaultApproval,
+                              };
+                            }
+                          } else if (field === "writeAccess" && isEnabled) {
                             next[action.id] = {
-                              toolName: action.id,
-                              writeAccess: action.write,
-                              requiresApproval: action.defaultApproval,
+                              ...next[action.id],
+                              writeAccess: !next[action.id].writeAccess,
+                            };
+                          } else if (
+                            field === "requiresApproval" &&
+                            isEnabled
+                          ) {
+                            next[action.id] = {
+                              ...next[action.id],
+                              requiresApproval:
+                                !next[action.id].requiresApproval,
                             };
                           }
-                        } else if (field === "writeAccess" && isEnabled) {
-                          next[action.id] = { ...next[action.id], writeAccess: !next[action.id].writeAccess };
-                        } else if (field === "requiresApproval" && isEnabled) {
-                          next[action.id] = { ...next[action.id], requiresApproval: !next[action.id].requiresApproval };
-                        }
-                        return next;
-                      });
-                    };
 
-                    return (
-                      <div
-                        key={action.id}
-                        className={`grid grid-cols-[1fr_auto_auto_auto] gap-0 px-5 py-3 border-b border-slate-50 last:border-0 items-center transition-colors ${isEnabled ? "" : "opacity-40"
-                          }`}
-                      >
-                        <div className="min-w-0 pr-4">
-                          <div className="flex items-center gap-2">
-                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${riskDot(action.riskLevel)}`} />
-                            <span className="text-[12px] font-semibold text-slate-800">{action.label}</span>
-                            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 border ${riskColor(action.riskLevel)}`}>
-                              {action.riskLevel}
-                            </span>
-                            {action.write && (
-                              <span className="text-[9px] font-mono text-slate-400 border border-slate-200 px-1">WRITE</span>
-                            )}
+                          return next;
+                        });
+                      };
+
+                      return (
+                        <div
+                          key={action.id}
+                          className={`border-b border-slate-100 last:border-0 transition-colors ${isEnabled ? "" : "opacity-50"
+                            }`}
+                        >
+
+                          {/* ================= MOBILE ================= */}
+                          <div className="md:hidden p-4">
+
+                            {/* Action info */}
+                            <div className="min-w-0">
+                              <div className="flex items-start gap-2 flex-wrap">
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${riskDot(
+                                    action.riskLevel
+                                  )}`}
+                                />
+
+                                <span className="text-[12px] font-semibold text-slate-800 leading-snug">
+                                  {action.label}
+                                </span>
+
+                                <span
+                                  className={`text-[9px] font-mono font-bold px-1.5 py-0.5 border ${riskColor(
+                                    action.riskLevel
+                                  )}`}
+                                >
+                                  {action.riskLevel}
+                                </span>
+
+                                {action.write && (
+                                  <span className="text-[9px] font-mono text-slate-400 border border-slate-200 px-1">
+                                    WRITE
+                                  </span>
+                                )}
+                              </div>
+
+                              <p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed ml-3.5">
+                                {action.description}
+                              </p>
+
+                              <p className="text-[9px] text-slate-400 font-mono mt-1 ml-3.5 break-all">
+                                {action.id}
+                              </p>
+                            </div>
+
+                            {/* Mobile controls */}
+                            <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-100">
+
+                              {/* Enabled */}
+                              <div className="flex flex-col items-center gap-1.5">
+                                <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">
+                                  Enabled
+                                </span>
+
+                                <button
+                                  onClick={() => toggle("enabled")}
+                                  aria-label={`Toggle ${action.label}`}
+                                  className={`w-10 h-5 rounded-full border-2 relative transition-all cursor-pointer ${isEnabled
+                                      ? "bg-slate-900 border-slate-900"
+                                      : "bg-slate-100 border-slate-300"
+                                    }`}
+                                >
+                                  <span
+                                    className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${isEnabled
+                                        ? "translate-x-4"
+                                        : "translate-x-0.5"
+                                      }`}
+                                  />
+                                </button>
+                              </div>
+
+                              {/* Write access */}
+                              <div className="flex flex-col items-center gap-1.5">
+                                <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide text-center">
+                                  Write
+                                </span>
+
+                                {action.write ? (
+                                  <button
+                                    onClick={() =>
+                                      isEnabled && toggle("writeAccess")
+                                    }
+                                    disabled={!isEnabled}
+                                    aria-label={`Toggle write access for ${action.label}`}
+                                    className={`w-10 h-5 rounded-full border-2 relative transition-all cursor-pointer disabled:cursor-default ${isEnabled && perm?.writeAccess
+                                        ? "bg-blue-600 border-blue-600"
+                                        : "bg-slate-100 border-slate-300"
+                                      }`}
+                                  >
+                                    <span
+                                      className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${isEnabled && perm?.writeAccess
+                                          ? "translate-x-4"
+                                          : "translate-x-0.5"
+                                        }`}
+                                    />
+                                  </button>
+                                ) : (
+                                  <span className="text-[9px] text-slate-300 font-mono">
+                                    Read only
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Approval */}
+                              <div className="flex flex-col items-center gap-1.5">
+                                <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide text-center">
+                                  Approval
+                                </span>
+
+                                <button
+                                  onClick={() =>
+                                    isEnabled && toggle("requiresApproval")
+                                  }
+                                  disabled={!isEnabled}
+                                  aria-label={`Toggle approval for ${action.label}`}
+                                  className={`w-10 h-5 rounded-full border-2 relative transition-all cursor-pointer disabled:cursor-default ${isEnabled && perm?.requiresApproval
+                                      ? "bg-amber-500 border-amber-500"
+                                      : "bg-slate-100 border-slate-300"
+                                    }`}
+                                >
+                                  <span
+                                    className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${isEnabled && perm?.requiresApproval
+                                        ? "translate-x-4"
+                                        : "translate-x-0.5"
+                                      }`}
+                                  />
+                                </button>
+                              </div>
+                            </div>
                           </div>
-                          <p className="text-[11px] text-slate-500 mt-0.5 ml-4">{action.description}</p>
-                          <p className="text-[10px] text-slate-400 font-mono mt-0.5 ml-4">{action.id}</p>
-                        </div>
 
-                        {/* Enabled toggle */}
-                        <div className="w-20 flex justify-center">
-                          <button
-                            onClick={() => toggle("enabled")}
-                            className={`w-10 h-5 rounded-full border-2 relative transition-all cursor-pointer ${isEnabled ? "bg-slate-900 border-slate-900" : "bg-slate-100 border-slate-300"
-                              }`}
-                          >
-                            <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${isEnabled ? "translate-x-4" : "translate-x-0.5"
-                              }`} />
-                          </button>
-                        </div>
+                          {/* ================= DESKTOP ================= */}
+                          <div className="hidden md:grid grid-cols-[1fr_auto_auto_auto] gap-0 px-5 py-3 items-center">
 
-                        {/* Write access */}
-                        <div className="w-24 flex justify-center">
-                          {action.write ? (
-                            <button
-                              onClick={() => isEnabled && toggle("writeAccess")}
-                              disabled={!isEnabled}
-                              className={`w-10 h-5 rounded-full border-2 relative transition-all cursor-pointer disabled:cursor-default ${isEnabled && perm?.writeAccess
-                                  ? "bg-blue-600 border-blue-600"
-                                  : "bg-slate-100 border-slate-300"
-                                }`}
-                            >
-                              <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${isEnabled && perm?.writeAccess ? "translate-x-4" : "translate-x-0.5"
-                                }`} />
-                            </button>
-                          ) : (
-                            <span className="text-[10px] text-slate-300 font-mono">read-only</span>
-                          )}
-                        </div>
+                            {/* Action */}
+                            <div className="min-w-0 pr-4">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${riskDot(
+                                    action.riskLevel
+                                  )}`}
+                                />
 
-                        {/* Requires approval */}
-                        <div className="w-28 flex justify-center">
-                          <button
-                            onClick={() => isEnabled && toggle("requiresApproval")}
-                            disabled={!isEnabled}
-                            className={`w-10 h-5 rounded-full border-2 relative transition-all cursor-pointer disabled:cursor-default ${isEnabled && perm?.requiresApproval
-                                ? "bg-amber-500 border-amber-500"
-                                : "bg-slate-100 border-slate-300"
-                              }`}
-                          >
-                            <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${isEnabled && perm?.requiresApproval ? "translate-x-4" : "translate-x-0.5"
-                              }`} />
-                          </button>
+                                <span className="text-[12px] font-semibold text-slate-800">
+                                  {action.label}
+                                </span>
+
+                                <span
+                                  className={`text-[9px] font-mono font-bold px-1.5 py-0.5 border ${riskColor(
+                                    action.riskLevel
+                                  )}`}
+                                >
+                                  {action.riskLevel}
+                                </span>
+
+                                {action.write && (
+                                  <span className="text-[9px] font-mono text-slate-400 border border-slate-200 px-1">
+                                    WRITE
+                                  </span>
+                                )}
+                              </div>
+
+                              <p className="text-[11px] text-slate-500 mt-0.5 ml-4">
+                                {action.description}
+                              </p>
+
+                              <p className="text-[10px] text-slate-400 font-mono mt-0.5 ml-4">
+                                {action.id}
+                              </p>
+                            </div>
+
+                            {/* Enabled */}
+                            <div className="w-20 flex justify-center">
+                              <button
+                                onClick={() => toggle("enabled")}
+                                aria-label={`Toggle ${action.label}`}
+                                className={`w-10 h-5 rounded-full border-2 relative transition-all cursor-pointer ${isEnabled
+                                    ? "bg-slate-900 border-slate-900"
+                                    : "bg-slate-100 border-slate-300"
+                                  }`}
+                              >
+                                <span
+                                  className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${isEnabled
+                                      ? "translate-x-4"
+                                      : "translate-x-0.5"
+                                    }`}
+                                />
+                              </button>
+                            </div>
+
+                            {/* Write access */}
+                            <div className="w-24 flex justify-center">
+                              {action.write ? (
+                                <button
+                                  onClick={() =>
+                                    isEnabled && toggle("writeAccess")
+                                  }
+                                  disabled={!isEnabled}
+                                  aria-label={`Toggle write access for ${action.label}`}
+                                  className={`w-10 h-5 rounded-full border-2 relative transition-all cursor-pointer disabled:cursor-default ${isEnabled && perm?.writeAccess
+                                      ? "bg-blue-600 border-blue-600"
+                                      : "bg-slate-100 border-slate-300"
+                                    }`}
+                                >
+                                  <span
+                                    className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${isEnabled && perm?.writeAccess
+                                        ? "translate-x-4"
+                                        : "translate-x-0.5"
+                                      }`}
+                                  />
+                                </button>
+                              ) : (
+                                <span className="text-[10px] text-slate-300 font-mono">
+                                  read-only
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Requires approval */}
+                            <div className="w-28 flex justify-center">
+                              <button
+                                onClick={() =>
+                                  isEnabled && toggle("requiresApproval")
+                                }
+                                disabled={!isEnabled}
+                                aria-label={`Toggle approval for ${action.label}`}
+                                className={`w-10 h-5 rounded-full border-2 relative transition-all cursor-pointer disabled:cursor-default ${isEnabled && perm?.requiresApproval
+                                    ? "bg-amber-500 border-amber-500"
+                                    : "bg-slate-100 border-slate-300"
+                                  }`}
+                              >
+                                <span
+                                  className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${isEnabled && perm?.requiresApproval
+                                      ? "translate-x-4"
+                                      : "translate-x-0.5"
+                                    }`}
+                                />
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
+                      );
+                    })}
+                  </div>
+                ))}
 
               {/* Guardrails summary */}
-              <div className="bg-white border border-slate-200 p-5">
+              <div className="bg-white border border-slate-200 p-4 sm:p-5">
                 <h4 className="text-[12px] font-bold text-slate-900 mb-3 flex items-center gap-2">
-                  <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  <svg
+                    className="w-4 h-4 text-amber-500 shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                    />
                   </svg>
                   Permission Summary
                 </h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 text-center">
                   {[
-                    { label: "Total actions", value: Object.keys(permissions).length, color: "text-slate-700" },
-                    { label: "Write-enabled", value: Object.values(permissions).filter((p) => p.writeAccess).length, color: "text-blue-600" },
-                    { label: "Require approval", value: Object.values(permissions).filter((p) => p.requiresApproval).length, color: "text-amber-600" },
                     {
-                      label: "CRITICAL risk", value: Object.keys(permissions).filter((id) => {
-                        const a = PROVIDER_CATALOG.flatMap((p) => p.actions).find((a) => a.id === id);
+                      label: "Total actions",
+                      value: Object.keys(permissions).length,
+                      color: "text-slate-700",
+                    },
+                    {
+                      label: "Write-enabled",
+                      value: Object.values(permissions).filter(
+                        (p) => p.writeAccess
+                      ).length,
+                      color: "text-blue-600",
+                    },
+                    {
+                      label: "Require approval",
+                      value: Object.values(permissions).filter(
+                        (p) => p.requiresApproval
+                      ).length,
+                      color: "text-amber-600",
+                    },
+                    {
+                      label: "CRITICAL risk",
+                      value: Object.keys(permissions).filter((id) => {
+                        const a = PROVIDER_CATALOG
+                          .flatMap((p) => p.actions)
+                          .find((a) => a.id === id);
+
                         return a?.riskLevel === "CRITICAL";
-                      }).length, color: "text-red-600"
+                      }).length,
+                      color: "text-red-600",
                     },
                   ].map((s) => (
-                    <div key={s.label} className="bg-slate-50 border border-slate-200 p-3">
-                      <div className={`text-2xl font-bold font-mono ${s.color}`}>{s.value}</div>
-                      <div className="text-[10px] text-slate-500 uppercase tracking-wide mt-1">{s.label}</div>
+                    <div
+                      key={s.label}
+                      className="bg-slate-50 border border-slate-200 p-2.5 sm:p-3"
+                    >
+                      <div
+                        className={`text-xl sm:text-2xl font-bold font-mono ${s.color}`}
+                      >
+                        {s.value}
+                      </div>
+
+                      <div className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-wide mt-1 leading-tight">
+                        {s.label}
+                      </div>
                     </div>
                   ))}
                 </div>
-                <p className="text-[11px] text-slate-400 mt-3">
-                  Hard system rules always apply: financial actions require financial authority, production deployments always require approval, and Clones cannot modify their own authority.
+
+                <p className="text-[10px] sm:text-[11px] text-slate-400 mt-3 leading-relaxed">
+                  Hard system rules always apply: financial actions require
+                  financial authority, production deployments always require
+                  approval, and Clones cannot modify their own authority.
                 </p>
               </div>
             </div>

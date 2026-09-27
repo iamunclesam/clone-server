@@ -855,77 +855,534 @@ CRITICAL ACCURACY & TRUTHFULNESS DIRECTIVES:
       });
     }
 
-    // Combine full thread text to detect action intent across multi-turn messages
-    const fullThreadText = [...formattedHistory.map(h => h.content), message].join("\n").toLowerCase();
+    const combinedText = [...formattedHistory.map(h => h.content), message].join("\n");
+    const fullThreadText = combinedText.toLowerCase();
 
-    // Check for email sending / drafting action intent
-    const isEmailAction = fullThreadText.includes("send an email") || fullThreadText.includes("send email") || fullThreadText.includes("draft an email") || fullThreadText.includes("draft email");
+    const getConnectedAccount = (providerName: string) => {
+      const acc = connectedAccounts.find((a: any) => a.provider === providerName);
+      if (!acc) return null;
+      const accessToken = decryptToken(acc.encryptedToken);
+      const refreshToken = acc.refreshToken ? decryptToken(acc.refreshToken) : "";
+      return { acc, accessToken, refreshToken };
+    };
 
-    if (isEmailAction) {
-      // Extract email address regex
-      const emailMatch = fullThreadText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    const createApproval = async (opts: {
+      actionName: string;
+      toolName: string;
+      params: Record<string, any>;
+      riskLevel: "LOW" | "MEDIUM" | "HIGH";
+      riskReason: string;
+    }) => {
+      return prisma.approvalRequest.create({
+        data: {
+          companyId,
+          employeeId: employee.id,
+          actionName: opts.actionName,
+          toolName: opts.toolName,
+          proposedParams: JSON.stringify(opts.params),
+          riskLevel: opts.riskLevel,
+          riskReason: opts.riskReason,
+          status: "PENDING",
+        },
+      });
+    };
+
+    const extractBetween = (text: string, startMarker: string, endMarker?: string): string | null => {
+      const startIdx = text.toLowerCase().indexOf(startMarker.toLowerCase());
+      if (startIdx === -1) return null;
+      let content = text.slice(startIdx + startMarker.length);
+      if (endMarker) {
+        const endIdx = content.toLowerCase().indexOf(endMarker.toLowerCase());
+        if (endIdx !== -1) content = content.slice(0, endIdx);
+      } else {
+        content = content.split("\n")[0];
+      }
+      return content.replace(/^[:\s"'`]+|[:\s"'`,]+$/g, "").trim() || null;
+    };
+
+    // ─── GOOGLE CALENDAR ACTIONS ───────────────────────────────────────────────
+    const isCalendarCreate = fullThreadText.match(/(create|schedule|book|set up|add)\s+(a|an)?\s*(calendar\s*)?(event|meeting|appointment)/i) ||
+                             (fullThreadText.includes("calendar") && (fullThreadText.includes("create") || fullThreadText.includes("schedule")));
+    const isCalendarUpdate = fullThreadText.match(/(update|change|modify|reschedule|edit)\s+(a|an)?\s*(calendar\s*)?(event|meeting|appointment)/i);
+    const isCalendarDelete = fullThreadText.match(/(delete|remove|cancel)\s+(a|an)?\s*(calendar\s*)?(event|meeting|appointment)/i);
+
+    if ((isCalendarCreate || isCalendarUpdate || isCalendarDelete) && isProviderAssigned(assignedPermissions, "calendar")) {
+      const conn = getConnectedAccount("calendar");
+      if (conn && conn.accessToken && !conn.accessToken.startsWith("calendar_mock_")) {
+        const provider = registry.getProvider("calendar");
+        const hasWrite = hasCapability(assignedPermissions, "calendar.create_event") ||
+                         hasCapability(assignedPermissions, "calendar.update_event") ||
+                         hasCapability(assignedPermissions, "calendar.delete_event");
+
+        if (provider && hasWrite) {
+          if (isCalendarCreate) {
+            const summary = extractBetween(combinedText, "summary:", "at") ||
+                            extractBetween(combinedText, "title:", "at") ||
+                            extractBetween(combinedText, "event called") ||
+                            extractBetween(combinedText, "meeting for") ||
+                            extractBetween(combinedText, "about") ||
+                            `Meeting scheduled by ${employee.name}`;
+
+            const now = new Date();
+            let startTime = new Date(now.getTime() + 3600_000);
+            let endTime = new Date(now.getTime() + 5400_000);
+            const attendeesMatch = combinedText.match(/with\s+((?:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}[,\s]*)+)/i);
+            const attendees: string[] = [];
+            if (attendeesMatch) {
+              const emails = attendeesMatch[1].match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
+              attendees.push(...emails);
+            }
+
+            const description = extractBetween(combinedText, "description:") ||
+                                extractBetween(combinedText, "details:") ||
+                                `Scheduled via Clone AI employee: ${employee.name}`;
+
+            const args: Record<string, any> = {
+              accessToken: conn.accessToken,
+              summary,
+              startTime: startTime.toISOString(),
+              endTime: endTime.toISOString(),
+              description,
+            };
+            if (attendees.length > 0) args.attendees = attendees;
+
+            const perm = assignedPermissions.find(p => p.toolName === "calendar.create_event");
+            if (perm?.requiresApproval) {
+              const approval = await createApproval({
+                actionName: "CALENDAR_CREATE_EVENT",
+                toolName: "calendar.create_event",
+                params: args,
+                riskLevel: "MEDIUM",
+                riskReason: `Creating calendar event "${summary}" requires authorization.`,
+              });
+              approvalRequired = {
+                approvalId: approval.id,
+                toolName: "calendar.create_event",
+                args,
+                riskReason: `Creating calendar event "${summary}" requires authorization.`,
+              };
+              responseText += `\n\n🔒 **Action Triggered**: Calendar event **"${summary}"** prepared. **Approval Request** created.`;
+            } else {
+              const res = await provider.executeTool({
+                connectionId: conn.acc.id,
+                toolName: "calendar.create_event",
+                arguments: args,
+                employeeId: employee.id,
+                companyId,
+              });
+              if (res?.success) {
+                actionExecuted = { toolName: "calendar.create_event", args, result: res.data };
+                const link = (res.data as any)?.htmlLink ? `[Open in Calendar](${(res.data as any).htmlLink})` : "saved to Google Calendar";
+                responseText += `\n\n✅ **Action Executed**: Created calendar event **"${summary}"** — ${link}.`;
+              } else {
+                responseText += `\n\n⚠️ **Calendar Failed**: Could not create event. ${res?.error || 'Unknown error'}`;
+              }
+            }
+          } else if (isCalendarUpdate) {
+            const eventId = extractBetween(combinedText, "eventId:") || extractBetween(combinedText, "event id:") ||
+                           combinedText.match(/[A-Za-z0-9_-]{20,}/)?.[0] || "";
+            const summary = extractBetween(combinedText, "summary:") || extractBetween(combinedText, "new title:");
+            if (eventId) {
+              const args: Record<string, any> = { accessToken: conn.accessToken, eventId };
+              if (summary) args.summary = summary;
+              const res = await provider.executeTool({
+                connectionId: conn.acc.id,
+                toolName: "calendar.update_event",
+                arguments: args,
+                employeeId: employee.id,
+                companyId,
+              });
+              if (res?.success) {
+                actionExecuted = { toolName: "calendar.update_event", args, result: res.data };
+                responseText += `\n\n✅ **Action Executed**: Updated calendar event **${eventId}** in Google Calendar.`;
+              } else {
+                responseText += `\n\n⚠️ **Calendar Update Failed**: ${res?.error || 'Unknown error'}`;
+              }
+            }
+          } else if (isCalendarDelete) {
+            const eventId = extractBetween(combinedText, "eventId:") || extractBetween(combinedText, "event id:") ||
+                           combinedText.match(/[A-Za-z0-9_-]{20,}/)?.[0] || "";
+            if (eventId) {
+              const approval = await createApproval({
+                actionName: "CALENDAR_DELETE_EVENT",
+                toolName: "calendar.delete_event",
+                params: { accessToken: conn.accessToken, eventId },
+                riskLevel: "HIGH",
+                riskReason: `Deleting calendar event ${eventId} requires approval.`,
+              });
+              approvalRequired = {
+                approvalId: approval.id,
+                toolName: "calendar.delete_event",
+                args: { eventId },
+                riskReason: "Calendar event deletion requires approval.",
+              };
+              responseText += `\n\n🔒 **Action Triggered**: Calendar deletion for **${eventId}** prepared — **Approval Request** created.`;
+            }
+          }
+        }
+      } else if (!conn) {
+        responseText += "\n\n⚠️ **Not Connected**: Google Calendar is not connected. Please connect it in Integrations settings.";
+      }
+    }
+
+    // ─── NOTION ACTIONS ────────────────────────────────────────────────────────
+    const isNotionCreatePage = fullThreadText.match(/(create|make|add|write)\s+(a|an)?\s*(notion\s*)?(page|doc|document|note|wiki)/i) ||
+                               (fullThreadText.includes("notion") && (fullThreadText.includes("create page") || fullThreadText.includes("new page")));
+    const isNotionCreateDbItem = fullThreadText.match(/(add|create)\s+(a|an)?\s*(notion\s*)?(database\s*)?(item|row|entry|record)/i) ||
+                                  (fullThreadText.includes("notion") && fullThreadText.includes("database"));
+    const isNotionUpdate = fullThreadText.match(/(update|edit|modify)\s+(a|an)?\s*(notion\s*)?(page|doc)/i);
+
+    if ((isNotionCreatePage || isNotionCreateDbItem || isNotionUpdate) && isProviderAssigned(assignedPermissions, "notion")) {
+      const conn = getConnectedAccount("notion");
+      if (conn && conn.accessToken && !conn.accessToken.startsWith("secret_notion_mock_")) {
+        const provider = registry.getProvider("notion");
+        if (provider) {
+          if (isNotionCreatePage) {
+            const parentId = extractBetween(combinedText, "parentId:") || extractBetween(combinedText, "parent id:") ||
+                             extractBetween(combinedText, "in page") || extractBetween(combinedText, "under") ||
+                             combinedText.match(/[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}/i)?.[0] || "";
+            const title = extractBetween(combinedText, "title:") || extractBetween(combinedText, "page called") ||
+                          extractBetween(combinedText, "note on") || extractBetween(combinedText, "document about") ||
+                          extractBetween(combinedText, "named") || `Note from ${employee.name}`;
+            const contentMarkdown = extractBetween(combinedText, "content:") || extractBetween(combinedText, "body:") ||
+                                    extractBetween(combinedText, "that says") || message.replace(/.*create\s*(a|an)?\s*(notion\s*)?(page|doc|note)\s*/i, "").trim() ||
+                                    `Created by Clone AI employee: ${employee.name}`;
+
+            if (parentId) {
+              const args = { accessToken: conn.accessToken, parentId, title: title.substring(0, 180), contentMarkdown };
+              const res = await provider.executeTool({
+                connectionId: conn.acc.id,
+                toolName: "notion.create_page",
+                arguments: args,
+                employeeId: employee.id,
+                companyId,
+              });
+              if (res?.success) {
+                actionExecuted = { toolName: "notion.create_page", args, result: res.data };
+                const link = (res.data as any)?.url ? `[Open in Notion](${(res.data as any).url})` : "saved to workspace";
+                responseText += `\n\n✅ **Action Executed**: Created Notion page **"${title}"** — ${link}.`;
+              } else {
+                responseText += `\n\n⚠️ **Notion Failed**: Could not create page. ${res?.error || 'Please provide a valid parentId.'}`;
+              }
+            } else {
+              responseText += "\n\n⚠️ **Needs parentId**: To create a Notion page, specify the parent page/database ID.";
+            }
+          } else if (isNotionCreateDbItem) {
+            const databaseId = extractBetween(combinedText, "databaseId:") || extractBetween(combinedText, "database id:") ||
+                               combinedText.match(/[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}/i)?.[0] || "";
+            const title = extractBetween(combinedText, "title:") || extractBetween(combinedText, "row for") || extractBetween(combinedText, "called") || "New Item";
+            if (databaseId) {
+              const args = { accessToken: conn.accessToken, databaseId, title: title.substring(0, 180) };
+              const res = await provider.executeTool({
+                connectionId: conn.acc.id,
+                toolName: "notion.create_database_item",
+                arguments: args,
+                employeeId: employee.id,
+                companyId,
+              });
+              if (res?.success) {
+                actionExecuted = { toolName: "notion.create_database_item", args, result: res.data };
+                responseText += `\n\n✅ **Action Executed**: Added Notion database item **"${title}"**.`;
+              } else {
+                responseText += `\n\n⚠️ **Notion DB Failed**: Could not add item. ${res?.error || 'Unknown error'}`;
+              }
+            }
+          } else if (isNotionUpdate) {
+            const pageId = extractBetween(combinedText, "pageId:") || extractBetween(combinedText, "page id:") ||
+                           combinedText.match(/[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}/i)?.[0] || "";
+            const title = extractBetween(combinedText, "title:") || extractBetween(combinedText, "new title:");
+            if (pageId && title) {
+              const args = { accessToken: conn.accessToken, pageId, title };
+              const res = await provider.executeTool({
+                connectionId: conn.acc.id,
+                toolName: "notion.update_page",
+                arguments: args,
+                employeeId: employee.id,
+                companyId,
+              });
+              if (res?.success) {
+                actionExecuted = { toolName: "notion.update_page", args, result: res.data };
+                responseText += `\n\n✅ **Action Executed**: Updated Notion page to **"${title}"**.`;
+              } else {
+                responseText += `\n\n⚠️ **Notion Update Failed**: ${res?.error || 'Unknown error'}`;
+              }
+            }
+          }
+        }
+      } else if (!conn) {
+        responseText += "\n\n⚠️ **Not Connected**: Notion is not connected. Please connect it in Integrations settings.";
+      }
+    }
+
+    // ─── SLACK ACTIONS ─────────────────────────────────────────────────────────
+    const isSlackSend = fullThreadText.match(/(send|post|write|publish|share)\s+(a|an)?\s*(slack\s*)?(message|msg|notification|dm|direct\s*message)/i) ||
+                        (fullThreadText.includes("slack") && (fullThreadText.includes("send") || fullThreadText.includes("post") || fullThreadText.includes("message")));
+    const isSlackChannel = fullThreadText.match(/(create|make|new|set up)\s+(a|an)?\s*(slack\s*)?(channel)/i);
+
+    if ((isSlackSend || isSlackChannel) && isProviderAssigned(assignedPermissions, "slack")) {
+      const conn = getConnectedAccount("slack");
+      if (conn && conn.accessToken && !conn.accessToken.startsWith("xoxb_mock_")) {
+        const provider = registry.getProvider("slack");
+        if (provider) {
+          if (isSlackSend) {
+            const isDM = fullThreadText.includes("dm") || fullThreadText.includes("direct message");
+            const channel = extractBetween(combinedText, "channel:") || extractBetween(combinedText, "in channel") ||
+                            extractBetween(combinedText, "to channel") || combinedText.match(/#[a-z0-9_-]+/i)?.[0]?.replace("#", "") || "general";
+            const userId = extractBetween(combinedText, "userId:") || extractBetween(combinedText, "user id:") ||
+                           extractBetween(combinedText, "to user") || "";
+            const text = extractBetween(combinedText, "text:") || extractBetween(combinedText, "saying:") ||
+                         extractBetween(combinedText, "message:") || extractBetween(combinedText, "content:") ||
+                         message.replace(/.*(send|post|share)\s*(a|an)?\s*(slack\s*)?(message|msg|dm|notification)\s*/i, "").trim() ||
+                         `Update from ${employee.name}: ${message.substring(0, 160)}`;
+
+            if (isDM && userId) {
+              const args = { accessToken: conn.accessToken, userId, text: text.substring(0, 3000) };
+              const approval = await createApproval({
+                actionName: "SLACK_SEND_DM",
+                toolName: "slack.send_dm",
+                params: args,
+                riskLevel: "MEDIUM",
+                riskReason: `Sending Slack DM to ${userId} requires approval.`,
+              });
+              approvalRequired = {
+                approvalId: approval.id,
+                toolName: "slack.send_dm",
+                args: { userId, text: args.text },
+                riskReason: "Slack DM dispatch requires approval.",
+              };
+              responseText += `\n\n🔒 **Action Triggered**: Slack DM to user **${userId}** prepared — **Approval Request** created.`;
+            } else {
+              const args = { accessToken: conn.accessToken, channel, text: text.substring(0, 3000) };
+              const approval = await createApproval({
+                actionName: "SLACK_SEND_MESSAGE",
+                toolName: "slack.send_message",
+                params: args,
+                riskLevel: "MEDIUM",
+                riskReason: `Posting to Slack channel #${channel} requires authorization.`,
+              });
+              approvalRequired = {
+                approvalId: approval.id,
+                toolName: "slack.send_message",
+                args: { channel, text: args.text },
+                riskReason: "Slack channel post requires approval.",
+              };
+              responseText += `\n\n🔒 **Action Triggered**: Slack message to **#${channel}** prepared — **Approval Request** created.`;
+            }
+          } else if (isSlackChannel) {
+            const name = (extractBetween(combinedText, "name:") || extractBetween(combinedText, "called") ||
+                         extractBetween(combinedText, "channel named") || "new-project-channel")
+                         .toLowerCase().replace(/[^a-z0-9_-]/g, "-").replace(/-+/g, "-").substring(0, 80);
+            const isPrivate = fullThreadText.includes("private");
+            const args = { accessToken: conn.accessToken, name, isPrivate };
+            const approval = await createApproval({
+              actionName: "SLACK_CREATE_CHANNEL",
+              toolName: "slack.create_channel",
+              params: args,
+              riskLevel: "MEDIUM",
+              riskReason: `Creating Slack channel #${name} requires approval.`,
+            });
+            approvalRequired = {
+              approvalId: approval.id,
+              toolName: "slack.create_channel",
+              args: { name, isPrivate },
+              riskReason: "Slack channel creation requires approval.",
+            };
+            responseText += `\n\n🔒 **Action Triggered**: Slack channel **#${name}** prepared — **Approval Request** created.`;
+          }
+        }
+      } else if (!conn) {
+        responseText += "\n\n⚠️ **Not Connected**: Slack is not connected. Please connect it in Integrations settings.";
+      }
+    }
+
+    // ─── HUBSPOT ACTIONS ───────────────────────────────────────────────────────
+    const isHubspotContact = fullThreadText.match(/(create|add|make|new)\s+(a|an)?\s*(hubspot\s*)?(contact|lead|customer|prospect)/i) ||
+                             (fullThreadText.includes("hubspot") && (fullThreadText.includes("contact") && fullThreadText.includes("create")));
+    const isHubspotDeal = fullThreadText.match(/(create|add|make|new|open)\s+(a|an)?\s*(hubspot\s*)?(deal|opportunity|pipeline)/i) ||
+                          (fullThreadText.includes("hubspot") && fullThreadText.includes("deal"));
+
+    if ((isHubspotContact || isHubspotDeal) && isProviderAssigned(assignedPermissions, "hubspot")) {
+      const conn = getConnectedAccount("hubspot");
+      if (conn && conn.accessToken && !conn.accessToken.startsWith("hubspot_mock_")) {
+        const provider = registry.getProvider("hubspot");
+        if (provider) {
+          if (isHubspotContact) {
+            const emailMatch = combinedText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+            const email = emailMatch ? emailMatch[0] : extractBetween(combinedText, "email:") || "";
+            const firstname = extractBetween(combinedText, "firstname:") || extractBetween(combinedText, "first name:") || "";
+            const lastname = extractBetween(combinedText, "lastname:") || extractBetween(combinedText, "last name:") || "";
+            const company = extractBetween(combinedText, "company:") || "";
+            const phone = extractBetween(combinedText, "phone:") || "";
+
+            if (email) {
+              const args: Record<string, any> = { accessToken: conn.accessToken, email };
+              if (firstname) args.firstname = firstname;
+              if (lastname) args.lastname = lastname;
+              if (company) args.company = company;
+              if (phone) args.phone = phone;
+              const res = await provider.executeTool({
+                connectionId: conn.acc.id,
+                toolName: "hubspot.create_contact",
+                arguments: args,
+                employeeId: employee.id,
+                companyId,
+              });
+              if (res?.success) {
+                actionExecuted = { toolName: "hubspot.create_contact", args, result: res.data };
+                responseText += `\n\n✅ **Action Executed**: Created HubSpot contact **${email}** in CRM.`;
+              } else {
+                responseText += `\n\n⚠️ **HubSpot Failed**: Could not create contact. ${res?.error || 'Unknown error'}`;
+              }
+            }
+          } else if (isHubspotDeal) {
+            const dealname = extractBetween(combinedText, "dealname:") || extractBetween(combinedText, "deal name:") ||
+                             extractBetween(combinedText, "deal called") || `New Deal from ${employee.name}`;
+            const amountStr = extractBetween(combinedText, "amount:") || extractBetween(combinedText, "$");
+            const dealstage = extractBetween(combinedText, "stage:") || extractBetween(combinedText, "pipeline stage:") || "appointmentscheduled";
+            const args: Record<string, any> = { accessToken: conn.accessToken, dealname };
+            if (amountStr && !isNaN(parseFloat(amountStr))) args.amount = parseFloat(amountStr);
+            if (dealstage) args.dealstage = dealstage;
+            const res = await provider.executeTool({
+              connectionId: conn.acc.id,
+              toolName: "hubspot.create_deal",
+              arguments: args,
+              employeeId: employee.id,
+              companyId,
+            });
+            if (res?.success) {
+              actionExecuted = { toolName: "hubspot.create_deal", args, result: res.data };
+              responseText += `\n\n✅ **Action Executed**: Created HubSpot deal **"${dealname}"** in pipeline.`;
+            } else {
+              responseText += `\n\n⚠️ **HubSpot Deal Failed**: ${res?.error || 'Unknown error'}`;
+            }
+          }
+        }
+      } else if (!conn) {
+        responseText += "\n\n⚠️ **Not Connected**: HubSpot is not connected. Please connect it in Integrations settings.";
+      }
+    }
+
+    // ─── LINEAR ACTIONS ────────────────────────────────────────────────────────
+    const isLinearCreate = fullThreadText.match(/(create|file|open|make|log|add)\s+(a|an)?\s*(linear\s*)?(issue|ticket|bug|task|story)/i) ||
+                           (fullThreadText.includes("linear") && (fullThreadText.includes("issue") || fullThreadText.includes("ticket")) && fullThreadText.includes("create"));
+    const isLinearUpdate = fullThreadText.match(/(update|change|close|complete|resolve)\s+(a|an)?\s*(linear\s*)?(issue|ticket|task)/i);
+
+    if ((isLinearCreate || isLinearUpdate) && isProviderAssigned(assignedPermissions, "linear")) {
+      const conn = getConnectedAccount("linear");
+      if (conn) {
+        const provider = registry.getProvider("linear");
+        if (provider) {
+          if (isLinearCreate) {
+            const title = extractBetween(combinedText, "title:") || extractBetween(combinedText, "issue called") ||
+                          extractBetween(combinedText, "ticket for") || extractBetween(combinedText, "titled") ||
+                          message.replace(/.*(create|file|open)\s*(a|an)?\s*(linear\s*)?(issue|ticket|bug|task|story)\s*/i, "").trim().substring(0, 200) ||
+                          `Issue created by ${employee.name}`;
+            const description = extractBetween(combinedText, "description:") || extractBetween(combinedText, "body:") ||
+                                `Reported via Clone AI. Original: ${message.substring(0, 500)}`;
+            const priorityStr = extractBetween(combinedText, "priority:");
+            const priority = priorityStr ? (parseInt(priorityStr, 10) || 0) : 0;
+            const teamKey = extractBetween(combinedText, "team:") || extractBetween(combinedText, "teamKey:") || "ENG";
+
+            const args = { accessToken: conn.accessToken, title: title.substring(0, 250), description, priority, teamKey };
+            const res = await provider.executeTool({
+              connectionId: conn.acc.id,
+              toolName: "linear.create_issue",
+              arguments: args,
+              employeeId: employee.id,
+              companyId,
+            });
+            if (res?.success) {
+              actionExecuted = { toolName: "linear.create_issue", args, result: res.data };
+              responseText += `\n\n✅ **Action Executed**: Created Linear issue **"${title}"**.`;
+            } else {
+              responseText += `\n\n⚠️ **Linear Failed**: Could not create issue. ${res?.error || 'Unknown error'}`;
+            }
+          } else if (isLinearUpdate) {
+            const issueId = extractBetween(combinedText, "issueId:") || extractBetween(combinedText, "ticket id:") ||
+                           combinedText.match(/[A-Z]{2,}-\d+/i)?.[0] || "";
+            const status = extractBetween(combinedText, "status:") ||
+                           ((fullThreadText.includes("close") || fullThreadText.includes("complete") || fullThreadText.includes("resolve")) ? "Done" : "");
+            if (issueId && status) {
+              const args = { accessToken: conn.accessToken, issueId, status };
+              const res = await provider.executeTool({
+                connectionId: conn.acc.id,
+                toolName: "linear.update_issue",
+                arguments: args,
+                employeeId: employee.id,
+                companyId,
+              });
+              if (res?.success) {
+                actionExecuted = { toolName: "linear.update_issue", args, result: res.data };
+                responseText += `\n\n✅ **Action Executed**: Updated Linear issue **${issueId}** status to **${status}**.`;
+              } else {
+                responseText += `\n\n⚠️ **Linear Update Failed**: ${res?.error || 'Unknown error'}`;
+              }
+            }
+          }
+        }
+      } else if (!conn) {
+        responseText += "\n\n⚠️ **Not Connected**: Linear is not connected. Please connect it in Integrations settings.";
+      }
+    }
+
+    // ─── GMAIL / EMAIL ACTIONS ─────────────────────────────────────────────────
+    const isEmailAction = fullThreadText.includes("send an email") || fullThreadText.includes("send email") ||
+                          fullThreadText.includes("draft an email") || fullThreadText.includes("draft email");
+
+    if (isEmailAction && !actionExecuted && !approvalRequired) {
+      const emailMatch = combinedText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
       const toEmail = emailMatch ? emailMatch[0] : "";
 
       if (toEmail) {
-        const isSend = fullThreadText.includes("send");
+        const isSend = fullThreadText.includes("send") && !fullThreadText.includes("draft");
         const toolName = isSend ? "gmail.send_message" : "gmail.draft_message";
+        const subject = extractBetween(combinedText, "subject:") ||
+                        extractBetween(combinedText, "re:") || `Follow up from ${employee.name}`;
+        const body = extractBetween(combinedText, "body:") || extractBetween(combinedText, "content:") ||
+                     `Hi,\n\nFollowing up on our conversation.\n\nBest regards,\n${employee.name}\n${employee.role}`;
 
-        // Extract subject & body or default intelligently
-        const subjectMatch = fullThreadText.match(/subject[:\s]+(["']?)([^"'\n]+)\1/i);
-        const subject = subjectMatch ? subjectMatch[2] : `Follow up from ${employee.name}`;
-        const body = `Hi,\n\nFollowing up on our conversation.\n\nBest regards,\n${employee.name}\n${employee.role}`;
-
-        if (isSend) {
-          // Send email requires founder approval (high risk action)
-          const approval = await prisma.approvalRequest.create({
-            data: {
-              companyId,
-              employeeId: employee.id,
-              actionName: "SEND_EMAIL_DISPATCH",
-              toolName,
-              proposedParams: JSON.stringify({ to: toEmail, subject, body }),
-              riskLevel: "HIGH",
-              riskReason: `External email dispatch to ${toEmail} requires founder authorization.`,
-              status: "PENDING",
-            },
+        const gmailConn = getConnectedAccount("gmail");
+        if (!gmailConn || !gmailConn.accessToken) {
+          responseText += "\n\n⚠️ **Not Connected**: Gmail is not connected. Please connect it in Integrations settings.";
+        } else if (isSend) {
+          const approval = await createApproval({
+            actionName: "SEND_EMAIL_DISPATCH",
+            toolName,
+            params: { to: toEmail, subject, body },
+            riskLevel: "HIGH",
+            riskReason: `External email dispatch to ${toEmail} requires founder authorization.`,
           });
-
           approvalRequired = {
             approvalId: approval.id,
             toolName,
             args: { to: toEmail, subject, body },
             riskReason: `External email dispatch to ${toEmail} requires founder authorization.`,
           };
-
-          responseText += `\n\n🔒 **Action Triggered**: I have prepared the email dispatch to **${toEmail}** (*Subject: "${subject}"*). Because sending external emails is a high-risk action, an **Approval Request** has been created for founder authorization.`;
+          responseText += `\n\n🔒 **Action Triggered**: Email dispatch to **${toEmail}** prepared — **Approval Request** created.`;
         } else {
-          // Draft email executes directly
-          if (gmailAccessToken) {
-            const provider = registry.getProvider("gmail");
-            if (provider) {
-              const gmailAcc = connectedAccounts.find((a: any) => a.provider === "gmail");
-              const gmailRefreshToken = gmailAcc?.refreshToken ? decryptToken(gmailAcc.refreshToken) : "";
-              const draftRes = await provider.executeTool({
-                connectionId: gmailAcc?.id || "conn_gmail",
-                toolName: "gmail.draft_message",
-                arguments: { accessToken: gmailAccessToken, refreshToken: gmailRefreshToken, to: toEmail, subject, body },
-                employeeId: employee.id,
-                companyId,
-              });
-
-              actionExecuted = {
-                toolName: "gmail.draft_message",
-                args: { to: toEmail, subject, body },
-                result: draftRes?.data,
-              };
-
-              responseText += `\n\n✅ **Action Executed**: Created email draft to **${toEmail}** (*Subject: "${subject}"*) in your connected Gmail inbox!`;
+          const provider = registry.getProvider("gmail");
+          if (provider) {
+            const draftRes = await provider.executeTool({
+              connectionId: gmailConn.acc.id,
+              toolName: "gmail.draft_message",
+              arguments: {
+                accessToken: gmailConn.accessToken,
+                refreshToken: gmailConn.refreshToken,
+                to: toEmail, subject, body,
+              },
+              employeeId: employee.id,
+              companyId,
+            });
+            if (draftRes?.success) {
+              actionExecuted = { toolName: "gmail.draft_message", args: { to: toEmail, subject, body }, result: draftRes?.data };
+              responseText += `\n\n✅ **Action Executed**: Created Gmail draft to **${toEmail}** (*Subject: "${subject}"*).`;
+            } else {
+              responseText += `\n\n⚠️ **Gmail Draft Failed**: ${draftRes?.error || 'Unknown error'}`;
             }
           }
         }
       }
     }
-
     // Persist key context memories to database if facts were updated
     if (message.toLowerCase().includes("company name is") || message.toLowerCase().includes("my email is")) {
       await prisma.employeeMemory.create({
