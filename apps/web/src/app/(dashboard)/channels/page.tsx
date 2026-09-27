@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { api, Channel, ChannelMessage, AIEmployee, Team, getApiBaseUrl } from "@/lib/api";
+import { FormattedText } from "@/components/FormattedText";
 
 const API_BASE = getApiBaseUrl();
 
@@ -377,10 +378,7 @@ export default function ChannelsPage() {
                           )}
 
                           {/* Content */}
-                          <p className={`text-[13px] leading-relaxed whitespace-pre-wrap break-words ${isHuman ? "text-blue-800" : "text-slate-800"
-                            }`}>
-                            {displayText}
-                          </p>
+                          <FormattedText content={displayText} isUser={isHuman} />
 
                           {/* Mentions */}
                           {mentions.length > 0 && (

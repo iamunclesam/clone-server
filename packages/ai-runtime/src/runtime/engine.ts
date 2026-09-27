@@ -335,8 +335,18 @@ export class RuntimeEngine {
       const taskType = triggerSource.startsWith("cron:") ? triggerSource.slice(5) : triggerSource;
 
       if (!proposedAction) {
-        // No integration action — but clone still thinks and posts to channel
-        await addStep("EXECUTING", `No integration action available. Generating ${taskType} response via LLM.`);
+        // Fetch real assigned tasks from database for this clone to ground response
+        const activeTasks = await prisma.task.findMany({
+          where: { companyId, assignedEmployeeId: cloneId, status: { $ne: "COMPLETED" as any } },
+          select: { title: true, status: true, priority: true },
+          take: 5,
+        }).catch(() => []);
+
+        const taskContext = activeTasks.length > 0
+          ? activeTasks.map((t: any) => `- "${t.title}" (Status: ${t.status}, Priority: ${t.priority})`).join("\n")
+          : "No active assigned tasks.";
+
+        await addStep("EXECUTING", `No integration action available. Checking real tasks for ${taskType}.`);
 
         const llmResult = await callLLM({
           preferredModel: clone.llmModel || "mistral-small-latest",
@@ -345,20 +355,22 @@ export class RuntimeEngine {
             {
               role: "user",
               content:
-                `Task: ${taskType}. ` +
+                `Task Type: ${taskType}.\n` +
+                `Real Assigned Tasks in DB:\n${taskContext}\n\n` +
                 (memoryContext ? `Context from memory:\n${memoryContext}\n\n` : "") +
-                `Generate a brief team update (2–4 sentences) appropriate for this task.`,
+                `If there are real active tasks or memory facts above, give a brief 1-3 sentence natural update matching your personality.\n` +
+                `CRITICAL: If there are NO active tasks or real updates, output strictly: NO_UPDATE`,
             },
           ],
-          temperature: 0.4,
-          maxTokens: 300,
+          temperature: 0.3,
+          maxTokens: 250,
         });
 
-        if (llmResult.success) {
+        if (llmResult.success && llmResult.content && !llmResult.content.includes("NO_UPDATE")) {
           await this.postToTeamChannel(companyId, clone, teamId, llmResult.content, triggerSource);
-          await addStep("COMPLETED", `LLM response generated and posted to team channel.`);
+          await addStep("COMPLETED", `LLM update grounded in real tasks posted to team channel.`);
         } else {
-          await addStep("COMPLETED", `Execution acknowledged (LLM unavailable: ${llmResult.error}).`);
+          await addStep("COMPLETED", `Execution completed. No fake channel update generated.`);
         }
 
         await this.finaliseExecution(execution.id, "COMPLETED", steps, { observed: true, trigger: triggerSource });

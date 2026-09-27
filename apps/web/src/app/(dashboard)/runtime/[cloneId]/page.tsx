@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 
 import { getApiBaseUrl } from "@/lib/api";
+import { FormattedText } from "@/components/FormattedText";
 
 const API_BASE = getApiBaseUrl();
 
@@ -175,7 +176,7 @@ function StepLog({ steps }: { steps: ExecutionStep[] }) {
               </span>
               <span className="text-[10px] text-slate-400 font-mono">{relativeTime(step.timestamp)}</span>
             </div>
-            <p className="text-[12px] text-slate-700 leading-relaxed">{step.details}</p>
+            <FormattedText content={step.details} />
             {step.toolCall && (
               <div className="mt-2 bg-slate-50 border border-slate-200 p-2 text-[11px] font-mono">
                 <div className="text-slate-500 mb-1">
