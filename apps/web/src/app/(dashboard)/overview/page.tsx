@@ -185,7 +185,7 @@ export default function OverviewPage() {
   ];
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6 font-sans">
+    <div className="p-2 sm:p-6 max-w-[1600px] mx-auto space-y-6 font-sans">
       {/* ─── TOP BAR ───────────────────────────────────────────────────────── */}
      
       {error && (

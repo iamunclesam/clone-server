@@ -48,7 +48,7 @@ export default function EmployeesPage() {
   });
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6 font-sans">
+    <div className="p-2 sm:p-6 max-w-[1600px] mx-auto space-y-6 font-sans">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 p-4">
         <div>
