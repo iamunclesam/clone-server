@@ -68,7 +68,7 @@ function NewTaskForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white border border-slate-200 p-6 space-y-6">
+    <form onSubmit={handleSubmit} className="bg-white border border-slate-200 p-3 sm:p-6 space-y-6">
       {error && (
         <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-mono">
           ⚠️ {error}
@@ -182,7 +182,7 @@ function NewTaskForm() {
 
 export default function NewTaskPage() {
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-6 font-sans">
+    <div className="p-2 sm:p-6 max-w-3xl mx-auto space-y-6 font-sans">
       {/* Header */}
       <div className="bg-white border border-slate-200 p-4">
         <Link href="/tasks" className="text-xs font-mono text-slate-500 hover:text-slate-900 flex items-center gap-1 mb-1">

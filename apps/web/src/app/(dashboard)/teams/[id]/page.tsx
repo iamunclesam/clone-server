@@ -1,27 +1,21 @@
 "use client";
-
 import { useState, useEffect, useCallback, use } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api, Team, AIEmployee, getApiBaseUrl } from "@/lib/api";
-
 const API_BASE = getApiBaseUrl();
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function statusDot(s: string) {
   if (s === "WORKING") return "bg-blue-500 animate-pulse";
   if (s === "ACTIVE") return "bg-emerald-500";
   if (s === "PAUSED") return "bg-slate-300";
   return "bg-slate-300";
 }
-
 function statusBadge(s: string) {
   if (s === "WORKING") return "bg-blue-50 text-blue-700 border-blue-200";
   if (s === "PAUSED") return "bg-slate-100 text-slate-500 border-slate-200";
   return "bg-emerald-50 text-emerald-700 border-emerald-200";
 }
-
 function execBadge(s: string) {
   const m: Record<string, string> = {
     COMPLETED: "bg-emerald-100 text-emerald-700 border-emerald-200",
@@ -33,7 +27,6 @@ function execBadge(s: string) {
   };
   return m[s] || "bg-slate-100 text-slate-500 border-slate-200";
 }
-
 function relTime(ts?: string) {
   if (!ts) return "—";
   const d = Date.now() - new Date(ts).getTime();
@@ -42,13 +35,10 @@ function relTime(ts?: string) {
   if (d < 86_400_000) return `${Math.floor(d / 3_600_000)}h ago`;
   return new Date(ts).toLocaleDateString();
 }
-
 function initials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
-
 // ─── Edit Modal ───────────────────────────────────────────────────────────────
-
 function EditTeamModal({
   team, companyId, onClose, onSaved,
 }: {
@@ -60,7 +50,6 @@ function EditTeamModal({
   const [instructions, setInstructions] = useState(team.instructions || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-
   async function save() {
     if (!name.trim()) { setError("Name is required"); return; }
     setSaving(true); setError("");
@@ -71,42 +60,41 @@ function EditTeamModal({
     } catch (e: any) { setError(e?.message || "Failed to save"); }
     finally { setSaving(false); }
   }
-
+  // text-base on mobile stops iOS Safari from zooming into inputs on focus
+  const inputCls = "w-full border border-slate-200 px-3 py-2.5 sm:py-2 text-base sm:text-[13px] text-slate-800 focus:outline-none focus:border-slate-400";
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white border border-slate-200 shadow-2xl w-full max-w-lg">
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+      <div className="relative bg-white border border-slate-200 shadow-2xl w-full sm:max-w-lg max-h-[92vh] flex flex-col">
+        <div className="px-4 sm:px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
           <h2 className="text-[14px] font-bold text-slate-900">Edit Team</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 cursor-pointer">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <button onClick={onClose} aria-label="Close" className="p-1 -m-1 text-slate-400 hover:text-slate-700 cursor-pointer">
+            <svg className="w-5 h-5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
-        <div className="p-5 space-y-4">
+        <div className="p-4 sm:p-5 space-y-4 overflow-y-auto">
           <div>
             <label className="text-[11px] font-semibold text-slate-600 block mb-1">Team name *</label>
-            <input value={name} onChange={(e) => setName(e.target.value)}
-              className="w-full border border-slate-200 px-3 py-2 text-[13px] text-slate-800 focus:outline-none focus:border-slate-400" />
+            <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
           </div>
           <div>
             <label className="text-[11px] font-semibold text-slate-600 block mb-1">Description</label>
-            <input value={description} onChange={(e) => setDescription(e.target.value)}
-              className="w-full border border-slate-200 px-3 py-2 text-[13px] text-slate-800 focus:outline-none focus:border-slate-400" />
+            <input value={description} onChange={(e) => setDescription(e.target.value)} className={inputCls} />
           </div>
           <div>
             <label className="text-[11px] font-semibold text-slate-600 block mb-1">Directives & SLA</label>
-            <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={4}
-              className="w-full border border-slate-200 px-3 py-2 text-[12px] text-slate-800 focus:outline-none focus:border-slate-400 resize-none font-mono"
+            <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={5}
+              className={`${inputCls} resize-none font-mono`}
               placeholder="Operating instructions, SLA, priorities…" />
           </div>
           {error && <p className="text-[12px] text-red-600">{error}</p>}
         </div>
-        <div className="px-5 py-3 border-t border-slate-100 flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-1.5 text-[12px] text-slate-600 border border-slate-200 hover:bg-slate-50 font-medium cursor-pointer">Cancel</button>
+        <div className="px-4 sm:px-5 py-3 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <button onClick={onClose} className="px-3 py-2.5 sm:py-1.5 text-[12px] text-slate-600 border border-slate-200 hover:bg-slate-50 font-medium cursor-pointer">Cancel</button>
           <button onClick={save} disabled={saving}
-            className="px-4 py-1.5 text-[12px] bg-slate-900 text-white font-semibold hover:bg-slate-700 disabled:opacity-60 cursor-pointer">
+            className="px-4 py-2.5 sm:py-1.5 text-[12px] bg-slate-900 text-white font-semibold hover:bg-slate-700 disabled:opacity-60 cursor-pointer">
             {saving ? "Saving…" : "Save Changes"}
           </button>
         </div>
@@ -114,32 +102,24 @@ function EditTeamModal({
     </div>
   );
 }
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
-
 type Tab = "overview" | "members" | "runtime" | "activity";
-
 export default function TeamDetailPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
   const { id: teamId } = params instanceof Promise ? use(params) : params;
   const { activeCompany } = useAuth();
   const companyId = activeCompany?.id;
-
   const [team, setTeam] = useState<Team | null>(null);
   const [allEmployees, setAllEmployees] = useState<AIEmployee[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("overview");
   const [editOpen, setEditOpen] = useState(false);
-
   const [activity, setActivity] = useState<any[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
-
   const [executions, setExecutions] = useState<any[]>([]);
   const [execLoading, setExecLoading] = useState(false);
-
   const [assigningId, setAssigningId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [settingLeadId, setSettingLeadId] = useState<string | null>(null);
-
   // ── Load team + all employees ─────────────────────────────────────────────
   const load = useCallback(async () => {
     if (!companyId) { setLoading(false); return; }
@@ -155,7 +135,6 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
       console.warn("Team load error:", err);
     } finally { setLoading(false); }
   }, [companyId, teamId]);
-
   // ── Load activity (team-wide) ─────────────────────────────────────────────
   const loadActivity = useCallback(async () => {
     if (!companyId) return;
@@ -166,7 +145,6 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
       if (data.success) setActivity(data.data?.activities || []);
     } catch { /* silent */ } finally { setActivityLoading(false); }
   }, [companyId]);
-
   // ── Load runtime executions for all team members ──────────────────────────
   const loadExecutions = useCallback(async (t: Team) => {
     if (!companyId) return;
@@ -193,17 +171,13 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
       setExecutions(results.slice(0, 40));
     } finally { setExecLoading(false); }
   }, [companyId]);
-
   useEffect(() => { load(); }, [load]);
-
   useEffect(() => {
     if (tab === "activity") loadActivity();
   }, [tab, loadActivity]);
-
   useEffect(() => {
     if (tab === "runtime" && team) loadExecutions(team);
   }, [tab, team, loadExecutions]);
-
   // ── Member actions ────────────────────────────────────────────────────────
   async function assignMember(empId: string) {
     if (!companyId || !team) return;
@@ -214,7 +188,6 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
     } catch (e: any) { alert(e?.message || "Failed to assign"); }
     finally { setAssigningId(null); }
   }
-
   async function removeMember(empId: string) {
     if (!companyId || !team || !confirm("Remove this member from the team?")) return;
     setRemovingId(empId);
@@ -224,7 +197,6 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
     } catch (e: any) { alert(e?.message || "Failed to remove"); }
     finally { setRemovingId(null); }
   }
-
   async function setLead(empId: string) {
     if (!companyId || !team) return;
     setSettingLeadId(empId);
@@ -234,63 +206,56 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
     } catch (e: any) { alert(e?.message || "Failed to set lead"); }
     finally { setSettingLeadId(null); }
   }
-
   // ── Derived data ──────────────────────────────────────────────────────────
   const memberMap = new Map(allEmployees.map((e) => [e.id, e]));
   const memberIds = new Set((team?.members || []).map((m) => m.id));
   const unassigned = allEmployees.filter((e) => !memberIds.has(e.id));
   const lead = team?.members.find((m) => m.id === team.leadEmployeeId) || team?.leadEmployee;
-
   const TABS: { id: Tab; label: string; count?: number }[] = [
     { id: "overview", label: "Overview" },
     { id: "members", label: "Members", count: team?.memberCount },
     { id: "runtime", label: "Runtime", count: executions.length || undefined },
     { id: "activity", label: "Activity" },
   ];
-
   if (loading) return (
     <div className="p-10 flex items-center justify-center">
       <p className="text-[12px] text-slate-400 font-mono">Loading team…</p>
     </div>
   );
-
   if (!team) return (
     <div className="p-10 text-center space-y-3">
       <p className="text-[13px] text-slate-500">Team not found.</p>
       <Link href="/teams" className="text-blue-600 text-[12px] hover:underline">← Back to teams</Link>
     </div>
   );
-
   return (
-    <div className="p-6 max-w-[1200px] mx-auto space-y-5 font-sans">
-
+    <div className="p-2 sm:p-6 max-w-[1200px] mx-auto space-y-4 sm:space-y-5 font-sans overflow-x-hidden">
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div>
-        <Link href="/teams" className="text-[11px] text-slate-400 hover:text-slate-600 font-mono flex items-center gap-1 mb-3">
+        <Link href="/teams" className="text-[11px] text-slate-400 hover:text-slate-600 font-mono inline-flex items-center gap-1 mb-3 py-1">
           <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
           All Teams
         </Link>
-
-        <div className="bg-white border border-slate-200 p-5 flex items-start justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <div className="w-14 h-14 bg-slate-900 text-white flex items-center justify-center text-xl font-bold font-mono shrink-0">
+        <div className="bg-white border border-slate-200 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-slate-900 text-white flex items-center justify-center text-lg sm:text-xl font-bold font-mono shrink-0">
               {initials(team.name)}
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl font-bold text-slate-900">{team.name}</h1>
+                <h1 className="text-lg sm:text-xl font-bold text-slate-900 break-words">{team.name}</h1>
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 border bg-emerald-50 text-emerald-700 border-emerald-200">● ACTIVE</span>
                 <span className="text-[10px] font-mono text-slate-400 border border-slate-200 px-2 py-0.5">
                   {team.memberCount} member{team.memberCount !== 1 ? "s" : ""}
                 </span>
               </div>
               {team.description && (
-                <p className="text-[13px] text-slate-500 mt-1 max-w-[480px]">{team.description}</p>
+                <p className="text-[13px] text-slate-500 mt-1 sm:max-w-[480px]">{team.description}</p>
               )}
               {lead && (
-                <div className="flex items-center gap-1.5 mt-2">
+                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                   <span className="text-[10px] font-mono text-slate-400">Lead:</span>
                   <div className="w-5 h-5 bg-amber-100 text-amber-800 text-[10px] font-bold font-mono flex items-center justify-center">
                     {lead.name[0]}
@@ -304,63 +269,61 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Link href="/runtime"
-              className="h-8 px-3 border border-slate-200 text-slate-700 text-[12px] font-medium hover:bg-slate-50 transition-colors flex items-center gap-1.5">
+              className="flex-1 sm:flex-none justify-center h-10 sm:h-8 px-3 border border-slate-200 text-slate-700 text-[12px] font-medium hover:bg-slate-50 transition-colors flex items-center gap-1.5">
               <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               Runtime
             </Link>
             <button onClick={() => setEditOpen(true)}
-              className="h-8 px-3 border border-slate-200 text-slate-700 text-[12px] font-medium hover:bg-slate-50 transition-colors cursor-pointer">
+              className="flex-1 sm:flex-none h-10 sm:h-8 px-3 border border-slate-200 text-slate-700 text-[12px] font-medium hover:bg-slate-50 transition-colors cursor-pointer">
               Edit Team
             </button>
           </div>
         </div>
       </div>
-
-      {/* ── Tabs ─────────────────────────────────────────────────────────── */}
-      <div className="flex gap-0 border-b border-slate-200">
-        {TABS.map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className={`px-4 py-2.5 text-[12px] font-semibold flex items-center gap-1.5 border-b-2 transition-colors -mb-px cursor-pointer ${tab === t.id ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-700"
-              }`}>
-            {t.label}
-            {t.count !== undefined && t.count > 0 && (
-              <span className="text-[10px] bg-slate-100 text-slate-500 font-mono px-1.5 py-0.5 rounded-full">{t.count}</span>
-            )}
-          </button>
-        ))}
+      {/* ── Tabs (scroll horizontally on narrow screens) ─────────────────── */}
+      <div className="-mx-3 sm:mx-0 border-b border-slate-200 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex gap-0 min-w-max px-3 sm:px-0">
+          {TABS.map((t) => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={`px-4 py-3 sm:py-2.5 text-[12px] font-semibold flex items-center gap-1.5 border-b-2 transition-colors -mb-px cursor-pointer whitespace-nowrap ${tab === t.id ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-700"
+                }`}>
+              {t.label}
+              {t.count !== undefined && t.count > 0 && (
+                <span className="text-[10px] bg-slate-100 text-slate-500 font-mono px-1.5 py-0.5 rounded-full">{t.count}</span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
-
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* OVERVIEW TAB                                                        */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       {tab === "overview" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <div className="lg:col-span-2 space-y-4">
-
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
+          <div className="lg:col-span-2 space-y-4 min-w-0">
             {/* Stat cards */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               {[
                 { label: "Members", value: team.memberCount, color: "text-slate-900" },
                 { label: "Working now", value: team.members.filter((m) => (memberMap.get(m.id)?.status || m.status) === "WORKING").length, color: "text-blue-600" },
                 { label: "Paused", value: team.members.filter((m) => (memberMap.get(m.id)?.status || m.status) === "PAUSED").length, color: "text-slate-400" },
               ].map((s) => (
-                <div key={s.label} className="bg-white border border-slate-200 p-4 text-center">
-                  <div className={`text-2xl font-bold font-mono ${s.color}`}>{s.value}</div>
-                  <div className="text-[10px] text-slate-500 uppercase tracking-wide mt-1">{s.label}</div>
+                <div key={s.label} className="bg-white border border-slate-200 p-3 sm:p-4 text-center">
+                  <div className={`text-xl sm:text-2xl font-bold font-mono ${s.color}`}>{s.value}</div>
+                  <div className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-wide mt-1">{s.label}</div>
                 </div>
               ))}
             </div>
-
             {/* Directives */}
-            <div className="bg-white border border-slate-200 p-5">
+            <div className="bg-white border border-slate-200 p-4 sm:p-5">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-[12px] font-bold text-slate-900 uppercase tracking-wide font-mono">Directives & SLA</h3>
-                <button onClick={() => setEditOpen(true)} className="text-[11px] text-blue-600 hover:text-blue-800 font-medium cursor-pointer">Edit →</button>
+                <button onClick={() => setEditOpen(true)} className="text-[11px] text-blue-600 hover:text-blue-800 font-medium cursor-pointer py-1">Edit →</button>
               </div>
               {team.instructions ? (
-                <div className="p-3 bg-slate-50 border border-slate-200 font-mono text-[12px] text-slate-700 leading-relaxed whitespace-pre-wrap">
+                <div className="p-3 bg-slate-50 border border-slate-200 font-mono text-[12px] text-slate-700 leading-relaxed whitespace-pre-wrap break-words">
                   {team.instructions}
                 </div>
               ) : (
@@ -372,12 +335,11 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
               )}
             </div>
-
             {/* Roster preview */}
-            <div className="bg-white border border-slate-200 p-5">
+            <div className="bg-white border border-slate-200 p-4 sm:p-5">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-[12px] font-bold text-slate-900 uppercase tracking-wide font-mono">Team Roster</h3>
-                <button onClick={() => setTab("members")} className="text-[11px] text-blue-600 hover:text-blue-800 font-medium cursor-pointer">
+                <button onClick={() => setTab("members")} className="text-[11px] text-blue-600 hover:text-blue-800 font-medium cursor-pointer py-1">
                   Manage →
                 </button>
               </div>
@@ -389,7 +351,7 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
                     const full = memberMap.get(member.id);
                     const isLead = member.id === team.leadEmployeeId || member.id === team.leadEmployee?.id;
                     return (
-                      <div key={member.id} className="flex items-center gap-3 py-2.5">
+                      <div key={member.id} className="flex items-center gap-2 sm:gap-3 py-2.5">
                         <div className="relative shrink-0">
                           {member.avatarUrl ? (
                             <img src={member.avatarUrl} alt={member.name} className="w-8 h-8 object-cover" />
@@ -401,16 +363,16 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
                           <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border-2 border-white ${statusDot(full?.status || "ACTIVE")}`} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[12px] font-semibold text-slate-800">{member.name}</span>
-                            {isLead && <span className="text-[9px] font-mono font-bold text-amber-700 border border-amber-200 bg-amber-50 px-1.5 py-0.5">👑 LEAD</span>}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[12px] font-semibold text-slate-800 truncate">{member.name}</span>
+                            {isLead && <span className="text-[9px] font-mono font-bold text-amber-700 border border-amber-200 bg-amber-50 px-1.5 py-0.5 shrink-0">👑 LEAD</span>}
                           </div>
-                          <span className="text-[11px] text-slate-500">{member.role}</span>
+                          <span className="text-[11px] text-slate-500 block truncate">{member.role}</span>
                         </div>
-                        <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 border ${statusBadge(full?.status || "ACTIVE")}`}>
+                        <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 border shrink-0 ${statusBadge(full?.status || "ACTIVE")}`}>
                           {full?.status || "ACTIVE"}
                         </span>
-                        <Link href={`/employees/${member.id}`} className="text-[11px] text-slate-400 hover:text-slate-700 font-mono">View →</Link>
+                        <Link href={`/employees/${member.id}`} className="hidden sm:inline text-[11px] text-slate-400 hover:text-slate-700 font-mono shrink-0">View →</Link>
                       </div>
                     );
                   })}
@@ -418,10 +380,9 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
               )}
             </div>
           </div>
-
-          {/* Right sidebar */}
-          <div className="space-y-4">
-            <div className="bg-white border border-slate-200 p-5">
+          {/* Right sidebar (stacks under main content on mobile) */}
+          <div className="space-y-4 min-w-0">
+            <div className="bg-white border border-slate-200 p-4 sm:p-5">
               <h3 className="text-[12px] font-bold text-slate-900 uppercase tracking-wide font-mono mb-4">Team Info</h3>
               <div className="divide-y divide-slate-100 text-[12px] font-mono">
                 {[
@@ -430,17 +391,16 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
                   ["Lead", lead?.name || "Unassigned"],
                   ["Created", team.createdAt ? new Date(team.createdAt).toLocaleDateString() : "—"],
                 ].map(([k, v]) => (
-                  <div key={k} className="flex justify-between py-2">
-                    <span className="text-slate-500">{k}</span>
-                    <span className="font-semibold text-slate-800 truncate max-w-[130px]">{v}</span>
+                  <div key={k} className="flex justify-between gap-3 py-2">
+                    <span className="text-slate-500 shrink-0">{k}</span>
+                    <span className="font-semibold text-slate-800 truncate max-w-[60%] sm:max-w-[130px] text-right">{v}</span>
                   </div>
                 ))}
               </div>
             </div>
-
-            <div className="bg-white border border-slate-200 p-5">
+            <div className="bg-white border border-slate-200 p-4 sm:p-5">
               <h3 className="text-[12px] font-bold text-slate-900 uppercase tracking-wide font-mono mb-3">Quick Actions</h3>
-              <div className="space-y-1.5">
+              <div className="grid grid-cols-1 sm:grid-cols-1 gap-1.5">
                 {[
                   { label: "+ Add / remove members", action: () => setTab("members") },
                   { label: "✏️ Edit team settings", action: () => setEditOpen(true) },
@@ -448,7 +408,7 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
                   { label: "📋 Activity logs", action: () => setTab("activity") },
                 ].map((item) => (
                   <button key={item.label} onClick={item.action}
-                    className="w-full text-left px-3 py-2 border border-slate-200 hover:bg-slate-50 text-[12px] text-slate-700 font-medium transition-colors cursor-pointer">
+                    className="w-full text-left px-3 py-3 sm:py-2 border border-slate-200 hover:bg-slate-50 text-[12px] text-slate-700 font-medium transition-colors cursor-pointer">
                     {item.label}
                   </button>
                 ))}
@@ -457,20 +417,17 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         </div>
       )}
-
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* MEMBERS TAB                                                         */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       {tab === "members" && (
-        <div className="space-y-5">
-
+        <div className="space-y-4 sm:space-y-5">
           {/* Current members */}
           <div className="bg-white border border-slate-200">
-            <div className="px-5 py-4 border-b border-slate-100">
+            <div className="px-4 sm:px-5 py-4 border-b border-slate-100">
               <h3 className="text-[13px] font-bold text-slate-900">Current Members ({team.memberCount})</h3>
               <p className="text-[11px] text-slate-500 mt-0.5">Click "Set as Lead" to promote a member. Remove to unassign from this team.</p>
             </div>
-
             {team.members.length === 0 ? (
               <div className="px-5 py-10 text-center text-[12px] text-slate-400">
                 No members yet. Assign employees below.
@@ -484,58 +441,59 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
                   const tools = [...new Set(perms.map((p) =>
                     p.toolName?.includes(".") ? p.toolName.split(".")[0] : p.toolName
                   ))].filter(Boolean).slice(0, 5);
-
                   return (
-                    <div key={member.id} className="px-5 py-4 flex items-start gap-4">
-                      {/* Avatar */}
-                      <div className="relative shrink-0">
-                        {member.avatarUrl ? (
-                          <img src={member.avatarUrl} alt={member.name} className="w-10 h-10 object-cover" />
-                        ) : (
-                          <div className="w-10 h-10 bg-slate-800 text-white text-[13px] font-bold font-mono flex items-center justify-center">
-                            {initials(member.name)}
-                          </div>
-                        )}
-                        <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${statusDot(full?.status || "ACTIVE")}`} />
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Link href={`/employees/${member.id}`} className="text-[13px] font-bold text-slate-900 hover:text-blue-600">
-                            {member.name}
-                          </Link>
-                          {isLead && (
-                            <span className="text-[9px] font-mono font-bold text-amber-700 border border-amber-200 bg-amber-50 px-1.5 py-0.5">👑 LEAD</span>
+                    <div key={member.id} className="px-4 sm:px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+                      <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+                        {/* Avatar */}
+                        <div className="relative shrink-0">
+                          {member.avatarUrl ? (
+                            <img src={member.avatarUrl} alt={member.name} className="w-10 h-10 object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 bg-slate-800 text-white text-[13px] font-bold font-mono flex items-center justify-center">
+                              {initials(member.name)}
+                            </div>
                           )}
-                          <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 border ${statusBadge(full?.status || "ACTIVE")}`}>
-                            {full?.status || "ACTIVE"}
-                          </span>
+                          <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${statusDot(full?.status || "ACTIVE")}`} />
                         </div>
-                        <p className="text-[11px] text-slate-500 mt-0.5">{member.role}</p>
-                        {tools.length > 0 && (
-                          <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                            {tools.map((t) => (
-                              <span key={t} className="text-[9px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 border border-slate-200">{t}</span>
-                            ))}
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Link href={`/employees/${member.id}`} className="text-[13px] font-bold text-slate-900 hover:text-blue-600 break-words">
+                              {member.name}
+                            </Link>
+                            {isLead && (
+                              <span className="text-[9px] font-mono font-bold text-amber-700 border border-amber-200 bg-amber-50 px-1.5 py-0.5">👑 LEAD</span>
+                            )}
+                            <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 border ${statusBadge(full?.status || "ACTIVE")}`}>
+                              {full?.status || "ACTIVE"}
+                            </span>
                           </div>
-                        )}
+                          <p className="text-[11px] text-slate-500 mt-0.5">{member.role}</p>
+                          {tools.length > 0 && (
+                            <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                              {tools.map((t) => (
+                                <span key={t} className="text-[9px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 border border-slate-200">{t}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                        {!isLead && (
+                      {/* Actions: full-width row of equal buttons on mobile */}
+                      <div className="grid grid-cols-3 sm:flex items-center gap-2 sm:shrink-0 sm:flex-wrap sm:justify-end">
+                        {!isLead ? (
                           <button onClick={() => setLead(member.id)} disabled={settingLeadId === member.id}
-                            className="text-[11px] px-2.5 py-1 border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 font-semibold transition-colors cursor-pointer disabled:opacity-50">
+                            className="text-[11px] px-2.5 py-2 sm:py-1 border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 font-semibold transition-colors cursor-pointer disabled:opacity-50">
                             {settingLeadId === member.id ? "Setting…" : "Set as Lead"}
                           </button>
+                        ) : (
+                          <span className="sm:hidden" />
                         )}
                         <Link href={`/employees/${member.id}`}
-                          className="text-[11px] px-2.5 py-1 border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium">
+                          className="text-[11px] px-2.5 py-2 sm:py-1 border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium text-center">
                           Profile →
                         </Link>
                         <button onClick={() => removeMember(member.id)} disabled={removingId === member.id}
-                          className="text-[11px] px-2.5 py-1 border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 font-semibold transition-colors cursor-pointer disabled:opacity-50">
+                          className="text-[11px] px-2.5 py-2 sm:py-1 border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 font-semibold transition-colors cursor-pointer disabled:opacity-50">
                           {removingId === member.id ? "Removing…" : "Remove"}
                         </button>
                       </div>
@@ -545,29 +503,28 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             )}
           </div>
-
           {/* Add members */}
           {unassigned.length > 0 && (
             <div className="bg-white border border-slate-200">
-              <div className="px-5 py-4 border-b border-slate-100">
+              <div className="px-4 sm:px-5 py-4 border-b border-slate-100">
                 <h3 className="text-[13px] font-bold text-slate-900">Add to Team</h3>
                 <p className="text-[11px] text-slate-500 mt-0.5">{unassigned.length} employee{unassigned.length !== 1 ? "s" : ""} not yet on this team</p>
               </div>
               <div className="divide-y divide-slate-100">
                 {unassigned.map((emp) => (
-                  <div key={emp.id} className="px-5 py-3 flex items-center gap-3">
+                  <div key={emp.id} className="px-4 sm:px-5 py-3 flex items-center gap-2 sm:gap-3">
                     <div className="w-8 h-8 bg-slate-700 text-white text-[11px] font-bold font-mono flex items-center justify-center shrink-0">
                       {initials(emp.name)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-semibold text-slate-800">{emp.name}</p>
-                      <p className="text-[11px] text-slate-500">{emp.role}</p>
+                      <p className="text-[12px] font-semibold text-slate-800 truncate">{emp.name}</p>
+                      <p className="text-[11px] text-slate-500 truncate">{emp.role}</p>
                     </div>
-                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 border ${statusBadge(emp.status)}`}>
+                    <span className={`hidden sm:inline text-[10px] font-mono font-bold px-1.5 py-0.5 border shrink-0 ${statusBadge(emp.status)}`}>
                       {emp.status}
                     </span>
                     <button onClick={() => assignMember(emp.id)} disabled={assigningId === emp.id}
-                      className="text-[11px] px-3 py-1.5 bg-slate-900 text-white font-semibold hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer">
+                      className="text-[11px] px-3 py-2.5 sm:py-1.5 bg-slate-900 text-white font-semibold hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer shrink-0">
                       {assigningId === emp.id ? "Adding…" : "+ Add"}
                     </button>
                   </div>
@@ -575,7 +532,6 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             </div>
           )}
-
           {unassigned.length === 0 && team.members.length > 0 && (
             <div className="bg-white border border-slate-200 p-5 text-center">
               <p className="text-[12px] text-slate-400">All employees in this workspace are already on this team.</p>
@@ -583,28 +539,26 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
           )}
         </div>
       )}
-
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* RUNTIME TAB                                                         */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       {tab === "runtime" && (
         <div className="space-y-4">
-          <div className="bg-white border border-slate-200 p-4 flex items-center justify-between">
+          <div className="bg-white border border-slate-200 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-[13px] font-bold text-slate-900">Team Runtime Executions</h3>
               <p className="text-[11px] text-slate-500 mt-0.5">Recent executions across all {team.memberCount} team members.</p>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => team && loadExecutions(team)} disabled={execLoading}
-                className="h-8 px-3 border border-slate-200 text-slate-600 text-[12px] font-medium hover:bg-slate-50 cursor-pointer disabled:opacity-50">
+                className="flex-1 sm:flex-none h-10 sm:h-8 px-3 border border-slate-200 text-slate-600 text-[12px] font-medium hover:bg-slate-50 cursor-pointer disabled:opacity-50">
                 {execLoading ? "Loading…" : "↻ Refresh"}
               </button>
-              <Link href="/runtime" className="h-8 px-3 bg-slate-900 text-white text-[12px] font-semibold hover:bg-slate-700 transition-colors flex items-center">
+              <Link href="/runtime" className="flex-1 sm:flex-none justify-center h-10 sm:h-8 px-3 bg-slate-900 text-white text-[12px] font-semibold hover:bg-slate-700 transition-colors flex items-center whitespace-nowrap">
                 Full Dashboard →
               </Link>
             </div>
           </div>
-
           {/* Per-member status row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {team.members.map((member) => {
@@ -613,7 +567,7 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
               const latest = memberExecs[0];
               return (
                 <Link key={member.id} href={`/runtime/${member.id}`}
-                  className="bg-white border border-slate-200 p-4 hover:border-slate-300 hover:shadow-sm transition-all group">
+                  className="bg-white border border-slate-200 p-4 hover:border-slate-300 hover:shadow-sm transition-all group min-w-0">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="relative shrink-0">
                       <div className="w-8 h-8 bg-slate-800 text-white text-[11px] font-bold font-mono flex items-center justify-center">
@@ -623,9 +577,9 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[12px] font-bold text-slate-900 truncate">{member.name}</p>
-                      <p className="text-[10px] text-slate-500">{member.role}</p>
+                      <p className="text-[10px] text-slate-500 truncate">{member.role}</p>
                     </div>
-                    <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 border ${statusBadge(full?.status || "ACTIVE")}`}>
+                    <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 border shrink-0 ${statusBadge(full?.status || "ACTIVE")}`}>
                       {full?.status || "ACTIVE"}
                     </span>
                   </div>
@@ -635,7 +589,7 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
                         <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 border ${execBadge(latest.status)}`}>
                           {latest.status?.replace(/_/g, " ")}
                         </span>
-                        <span className="text-[9px] text-slate-400 font-mono">{relTime(latest.startedAt)}</span>
+                        <span className="text-[9px] text-slate-400 font-mono shrink-0">{relTime(latest.startedAt)}</span>
                       </div>
                       <p className="text-[10px] text-slate-600 font-mono mt-1 truncate">{latest.triggerSource}</p>
                     </div>
@@ -649,10 +603,9 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
               );
             })}
           </div>
-
           {/* Full execution log */}
           <div className="bg-white border border-slate-200">
-            <div className="px-5 py-3 border-b border-slate-100">
+            <div className="px-4 sm:px-5 py-3 border-b border-slate-100">
               <h3 className="text-[12px] font-bold text-slate-900 font-mono uppercase">All Executions</h3>
             </div>
             {execLoading ? (
@@ -665,27 +618,31 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
             ) : (
               <div className="divide-y divide-slate-100">
                 {executions.map((exec, i) => (
-                  <div key={exec.id || i} className="px-5 py-3 flex items-center gap-4">
+                  <div key={exec.id || i} className="px-4 sm:px-5 py-3 flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-2 sm:gap-4">
                     <div className="w-7 h-7 bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold font-mono shrink-0">
                       {initials(exec.memberName || "?")}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
+                    {/* min-w-0 + basis keeps the name/trigger on the first line beside the avatar */}
+                    <div className="flex-1 min-w-0 basis-[calc(100%-2.5rem)] sm:basis-auto">
+                      <div className="flex items-center gap-x-2 flex-wrap">
                         <span className="text-[12px] font-semibold text-slate-800">{exec.memberName}</span>
-                        <span className="text-[10px] text-slate-400 font-mono">·</span>
-                        <span className="text-[11px] font-mono text-slate-600 truncate max-w-[200px]">{exec.triggerSource}</span>
+                        <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">·</span>
+                        <span className="text-[11px] font-mono text-slate-600 truncate max-w-full sm:max-w-[200px]">{exec.triggerSource}</span>
                       </div>
                       {exec.error && <p className="text-[10px] text-red-500 mt-0.5 truncate">{exec.error}</p>}
                     </div>
-                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 border shrink-0 ${execBadge(exec.status)}`}>
-                      {exec.status?.replace(/_/g, " ")}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-mono shrink-0">{relTime(exec.startedAt)}</span>
-                    {exec.cloneId && (
-                      <Link href={`/runtime/${exec.cloneId}`} className="text-[10px] text-slate-400 hover:text-blue-600 font-mono shrink-0">
-                        Detail →
-                      </Link>
-                    )}
+                    {/* Second line on mobile: status, time, detail link */}
+                    <div className="flex items-center gap-3 pl-10 sm:pl-0 w-full sm:w-auto shrink-0">
+                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 border shrink-0 ${execBadge(exec.status)}`}>
+                        {exec.status?.replace(/_/g, " ")}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono shrink-0">{relTime(exec.startedAt)}</span>
+                      {exec.cloneId && (
+                        <Link href={`/runtime/${exec.cloneId}`} className="text-[10px] text-slate-400 hover:text-blue-600 font-mono shrink-0 ml-auto sm:ml-0">
+                          Detail →
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -693,31 +650,29 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         </div>
       )}
-
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* ACTIVITY TAB                                                        */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       {tab === "activity" && (
         <div className="space-y-3">
-          <div className="bg-white border border-slate-200 p-4 flex items-center justify-between">
+          <div className="bg-white border border-slate-200 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-[13px] font-bold text-slate-900">Activity Logs</h3>
               <p className="text-[11px] text-slate-500 mt-0.5">Company-wide activity filtered to this team's members.</p>
             </div>
             <button onClick={loadActivity} disabled={activityLoading}
-              className="h-8 px-3 border border-slate-200 text-slate-600 text-[12px] font-medium hover:bg-slate-50 cursor-pointer disabled:opacity-50">
+              className="h-10 sm:h-8 px-3 border border-slate-200 text-slate-600 text-[12px] font-medium hover:bg-slate-50 cursor-pointer disabled:opacity-50">
               {activityLoading ? "Loading…" : "↻ Refresh"}
             </button>
           </div>
-
           <div className="bg-white border border-slate-200 divide-y divide-slate-100">
             {activityLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="px-5 py-3 animate-pulse flex gap-3">
+                <div key={i} className="px-4 sm:px-5 py-3 animate-pulse flex gap-3">
                   <div className="w-7 h-7 bg-slate-100 shrink-0" />
                   <div className="flex-1 space-y-1.5">
-                    <div className="h-3 bg-slate-100 w-1/3" />
-                    <div className="h-2.5 bg-slate-50 w-2/3" />
+                    <div className="h-3 bg-slate-100 w-1/2 sm:w-1/3" />
+                    <div className="h-2.5 bg-slate-50 w-3/4 sm:w-2/3" />
                   </div>
                 </div>
               ))
@@ -728,21 +683,21 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             ) : (
               activity.map((log: any) => (
-                <div key={log.id} className="px-5 py-3 flex items-start gap-3">
+                <div key={log.id} className="px-4 sm:px-5 py-3 flex items-start gap-3">
                   <div className="w-7 h-7 bg-slate-100 flex items-center justify-center shrink-0 mt-0.5">
                     <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-x-2 flex-wrap">
                       <span className="text-[12px] font-semibold text-slate-800">{log.action?.replace(/_/g, " ")}</span>
                       {log.resource && (
-                        <span className="text-[11px] text-slate-500 font-mono truncate max-w-[200px]">{log.resource}</span>
+                        <span className="text-[11px] text-slate-500 font-mono truncate max-w-full sm:max-w-[200px]">{log.resource}</span>
                       )}
                     </div>
-                    {log.details && <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{log.details}</p>}
-                    <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-400 font-mono">
+                    {log.details && <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2 break-words">{log.details}</p>}
+                    <div className="flex items-center gap-x-3 gap-y-0.5 mt-1 text-[10px] text-slate-400 font-mono flex-wrap">
                       <span>{log.actorName}</span>
                       <span>{log.createdAt ? new Date(log.createdAt).toLocaleString() : ""}</span>
                     </div>
@@ -753,7 +708,6 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         </div>
       )}
-
       {/* ── Edit modal ─────────────────────────────────────────────────── */}
       {editOpen && companyId && (
         <EditTeamModal

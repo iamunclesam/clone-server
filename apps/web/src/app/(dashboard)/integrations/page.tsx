@@ -201,7 +201,7 @@ export default function IntegrationsPage() {
   const availableApps = filteredItems.filter((i) => !i.isConnected);
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6 font-sans">
+    <div className="p-2 sm:p-6 max-w-[1600px] mx-auto space-y-6 font-sans">
       {connectedBanner && (
         <div className="p-4 bg-emerald-900 border border-emerald-700 text-white flex items-center justify-between shadow-lg">
           <div className="flex items-center gap-3">
