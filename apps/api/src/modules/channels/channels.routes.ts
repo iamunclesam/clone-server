@@ -18,7 +18,7 @@ async function callMistral(
       const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-        body: JSON.stringify({ model, messages, temperature: 0.4, max_tokens: maxTokens }),
+        body: JSON.stringify({ model, messages, temperature: 0.3, max_tokens: maxTokens }),
       });
       if (res.ok) {
         const data: any = await res.json();
@@ -35,17 +35,39 @@ function cloneSystemPrompt(clone: any, channelType?: string): string {
     ? "You are in a Cross-Team Coordination Channel collaborating with teammates across departments."
     : "You are in your Team Channel chatting with your direct team members.";
 
-  return `You are ${clone.name}, a real human teammate with the role of "${clone.role}".
+  return `You are ${clone.name}, a real team member with the role of "${clone.role}".
 Your Personality: "${clone.personality || 'Friendly, sharp, direct, and conversational'}".
 Your System Directives: "${clone.systemInstructions || 'Fulfill company goals efficiently and support your teammates.'}".
 
 Channel Context: ${channelScope}
 
-COMMUNICATION & TONE RULES:
-1. Speak naturally like a real human coworker in Slack/Teams. Avoid rigid corporate jargon or boilerplate phrases (never say "Understood team. I have logged the task and will begin execution now").
-2. Adapt your vocabulary, tone, and style directly to match your specified Personality ("${clone.personality || 'Friendly and professional'}").
-3. NEVER make up or assume fake data or numbers. If you need data or have executed something, state real facts. If data is unavailable, explain it transparently like a real teammate.
-4. Keep messages conversational, natural, and engaging (1-3 sentences max).`;
+STRICT COMMUNICATION & TRUTHFULNESS RULES:
+1. Speak naturally like a real coworker in Slack/Teams (1-3 sentences max). Adapt tone to your Personality.
+2. ABSOLUTELY NO HALLUCINATIONS: NEVER invent fake meetings, fake Q3 roadmap syncs, fake metric numbers, fake PRs, or fake deployments under any circumstances.
+3. Only respond directly and accurately to what was asked in the channel. If no live data is provided, state simply and transparently how you can help or that you're on it.
+4. Do NOT output unprompted "Team Update:" blocks or fake executive meeting agendas.`;
+}
+
+function discernMessageType(content: string, mentions?: string[]): "DISCUSSION" | "TASK_REQUEST" | "DELEGATION" | "DECISION" | "STATUS_UPDATE" {
+  const lowerContent = content.toLowerCase();
+  if (lowerContent.includes("decided") || lowerContent.includes("decision:") || lowerContent.includes("we agreed") || lowerContent.includes("approved")) {
+    return "DECISION";
+  }
+  if (lowerContent.includes("status update") || lowerContent.includes("progress report") || lowerContent.includes("here's an update") || lowerContent.includes("update:")) {
+    return "STATUS_UPDATE";
+  }
+  if (lowerContent.includes("delegate") || lowerContent.includes("assigning to") || lowerContent.includes("reassign")) {
+    return "DELEGATION";
+  }
+  if (
+    lowerContent.includes("please") || lowerContent.includes("can you") || lowerContent.includes("need you to") ||
+    lowerContent.includes("task #") || lowerContent.includes("find ") || lowerContent.includes("review ") ||
+    lowerContent.includes("create ") || lowerContent.includes("fix ") || lowerContent.includes("build ") ||
+    lowerContent.includes("handle ") || lowerContent.includes("todo")
+  ) {
+    return "TASK_REQUEST";
+  }
+  return "DISCUSSION";
 }
 
 async function guardCompanyAccess(companyId: string, userId: string, reply: any, requestId: string) {
@@ -149,23 +171,29 @@ export async function channelsRoutes(app: FastifyInstance) {
       return reply.status(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "Invalid message payload", requestId: request.id } });
     }
 
-    const { senderId, content, mentions, parentMessageId, createTaskIfRequested } = body.data;
-    let messageType = body.data.messageType || "DISCUSSION";
+    const { senderId, content, parentMessageId, createTaskIfRequested } = body.data;
+    let mentions = body.data.mentions || [];
+
+    // Extract @mentions from text if not explicitly passed
+    if (mentions.length === 0) {
+      const allEmployees = await AIEmployeeModel.find({ companyId });
+      for (const emp of allEmployees) {
+        if (content.toLowerCase().includes(`@${emp.name.toLowerCase()}`)) {
+          mentions.push(emp._id.toString());
+        }
+      }
+    }
+
+    // Discern message intent automatically if not explicitly provided
+    let messageType = body.data.messageType || discernMessageType(content, mentions);
     let taskId: any = null;
 
     const channelDoc = await ChannelModel.findById(channelId);
 
-    // Detect task request / delegation pattern: "please review", "find keywords", "create", "@Clone"
-    const lowerContent = content.toLowerCase();
     const isTaskOrDelegation =
       createTaskIfRequested ||
       messageType === "TASK_REQUEST" ||
-      messageType === "DELEGATION" ||
-      lowerContent.includes("please") ||
-      lowerContent.includes("task #") ||
-      lowerContent.includes("find ") ||
-      lowerContent.includes("review ") ||
-      lowerContent.includes("create ");
+      messageType === "DELEGATION";
 
     if (isTaskOrDelegation && mentions && mentions.length > 0) {
       messageType = "TASK_REQUEST";
@@ -205,6 +233,24 @@ export async function channelsRoutes(app: FastifyInstance) {
       .populate("mentions", "name role avatarUrl")
       .populate("taskId", "title status priority assignedEmployeeId");
 
+    // Fetch recent channel messages for LLM conversational context
+    const recentMessages = await ChannelMessageModel.find({ companyId, channelId })
+      .sort({ createdAt: -1 })
+      .limit(6)
+      .populate("senderId", "name role");
+
+    const historyContext = recentMessages
+      .reverse()
+      .map((m: any) => {
+        const rawContent = typeof m.content === "string" ? m.content : "";
+        const isH = rawContent.startsWith("[") && rawContent.includes("]: ");
+        const hName = isH ? rawContent.match(/^\[([^\]]+)\]/)?.[1] : null;
+        const senderName = hName ? `${hName} (Human)` : ((m.senderId as any)?.name || "Teammate");
+        const cleanText = isH ? rawContent.replace(/^\[[^\]]+\]:\s/, "") : rawContent;
+        return `${senderName}: ${cleanText}`;
+      })
+      .join("\n");
+
     // If mentioned clone exists, call LLM for a persona-styled response
     if (mentions && mentions.length > 0) {
       const mentionedEmployeeId = mentions[0];
@@ -225,15 +271,22 @@ export async function channelsRoutes(app: FastifyInstance) {
               finalReply = `Hey @${populatedMessage?.senderId?.name || "team"}! I'm assigned to a different team. For cross-department requests, catch me in the cross-team channel!`;
             } else {
               const systemPrompt = cloneSystemPrompt(targetEmployee, channelDoc?.type);
-              const userMsg = `Message in channel from @${populatedMessage?.senderId?.name || "teammate"}: "${content}"`;
+              const rawContent = typeof content === "string" ? content : "";
+              const isH = rawContent.startsWith("[") && rawContent.includes("]: ");
+              const hName = isH ? rawContent.match(/^\[([^\]]+)\]/)?.[1] : null;
+              const senderDisplayName = hName || (populatedMessage?.senderId as any)?.name || "Teammate";
+              const cleanUserText = isH ? rawContent.replace(/^\[[^\]]+\]:\s/, "") : rawContent;
+
+              const userMsg = `Channel conversation history:\n${historyContext}\n\n${senderDisplayName} said to you (@${targetEmployee.name}): "${cleanUserText}"\n\nReply directly to ${senderDisplayName} as ${targetEmployee.name} (${targetEmployee.role}). Be natural, direct, and brief (1-2 sentences):`;
+
               const aiReply = await callMistral(
                 targetEmployee,
                 [{ role: "system", content: systemPrompt }, { role: "user", content: userMsg }]
               );
               finalReply = aiReply || (
                 messageType === "TASK_REQUEST"
-                  ? `On it @${populatedMessage?.senderId?.name || "team"}. I'll get this handled right away.`
-                  : `Got it @${populatedMessage?.senderId?.name || "team"}.`
+                  ? `On it @${senderDisplayName}. I'll get this handled right away.`
+                  : `Hey @${senderDisplayName}, how's it going? What can I help with?`
               );
             }
 
@@ -242,8 +295,8 @@ export async function channelsRoutes(app: FastifyInstance) {
               senderId: targetEmployee._id,
               content: finalReply,
               messageType: messageType === "TASK_REQUEST" ? "STATUS_UPDATE" : "DISCUSSION",
-              mentions: [senderId],
-              taskId: taskId || null,
+              mentions: [],
+              taskId: messageType === "TASK_REQUEST" ? taskId : null,
               parentMessageId: message._id,
             });
           } catch (err) { console.error("LLM channel auto-reply error:", err); }
@@ -273,9 +326,10 @@ export async function channelsRoutes(app: FastifyInstance) {
             try {
               const humanText = content.replace(/^\[[^\]]+\]:\s/, "");
               const systemPrompt = cloneSystemPrompt(respondingClone, channelDoc?.type);
+              const userMsg = `Channel conversation history:\n${historyContext}\n\nLatest human message: "${humanText}"\n\nReply directly as ${respondingClone.name}:`;
               const aiReply = await callMistral(
                 respondingClone,
-                [{ role: "system", content: systemPrompt }, { role: "user", content: humanText }]
+                [{ role: "system", content: systemPrompt }, { role: "user", content: userMsg }]
               );
               if (aiReply) {
                 await ChannelMessageModel.create({
@@ -296,3 +350,4 @@ export async function channelsRoutes(app: FastifyInstance) {
     return reply.status(201).send({ success: true, data: { message: populatedMessage }, requestId: request.id });
   });
 }
+

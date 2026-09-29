@@ -497,6 +497,7 @@ export async function employeesRoutes(app: FastifyInstance) {
       systemInstructions: z.string().max(8000).optional(),
       personality: z.string().max(500).optional(),
       maxMonthlySpend: z.number().min(0).max(100000).optional(),
+      avatarUrl: z.string().url().max(1024).optional().nullable(),
     });
     const body = allowedFields.safeParse(request.body);
     if (!body.success) return reply.status(400).send({ success: false, error: { code: "VALIDATION_ERROR", message: "Invalid fields", requestId: request.id } });

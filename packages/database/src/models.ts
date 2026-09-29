@@ -134,10 +134,23 @@ const AIEmployeeSchema = new Schema(
   { timestamps: true }
 );
 
+// 6b. Project
+const ProjectSchema = new Schema(
+  {
+    companyId: { type: Schema.Types.ObjectId, ref: "Company", required: true },
+    name: { type: String, required: true },
+    description: { type: String },
+    repository: { type: String },
+    status: { type: String, default: "ACTIVE" },
+  },
+  { timestamps: true }
+);
+
 // 7. Task
 const TaskSchema = new Schema(
   {
     companyId: { type: Schema.Types.ObjectId, ref: "Company", required: true },
+    projectId: { type: Schema.Types.ObjectId, ref: "Project" },
     teamId: { type: Schema.Types.ObjectId, ref: "Team" },
     assignedEmployeeId: { type: Schema.Types.ObjectId, ref: "AIEmployee" },
     title: { type: String, required: true },
@@ -591,6 +604,7 @@ export const MembershipModel = mongoose.models.Membership || mongoose.model("Mem
 export const TeamModel = mongoose.models.Team || mongoose.model("Team", TeamSchema);
 export const ConnectedAccountModel = mongoose.models.ConnectedAccount || mongoose.model("ConnectedAccount", ConnectedAccountSchema);
 export const AIEmployeeModel = mongoose.models.AIEmployee || mongoose.model("AIEmployee", AIEmployeeSchema);
+export const ProjectModel = mongoose.models.Project || mongoose.model("Project", ProjectSchema);
 export const TaskModel = mongoose.models.Task || mongoose.model("Task", TaskSchema);
 export const ApprovalRequestModel = mongoose.models.ApprovalRequest || mongoose.model("ApprovalRequest", ApprovalRequestSchema);
 export const EmployeeMemoryModel = mongoose.models.EmployeeMemory || mongoose.model("EmployeeMemory", EmployeeMemorySchema);

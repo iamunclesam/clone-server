@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -11,9 +10,7 @@ import {
   getApiBaseUrl,
 } from "@/lib/api";
 import { FormattedText } from "@/components/FormattedText";
-
 const API_BASE = getApiBaseUrl();
-
 const MSG_BADGES: Record<string, { label: string; cls: string }> = {
   DISCUSSION: {
     label: "Chat",
@@ -36,7 +33,6 @@ const MSG_BADGES: Record<string, { label: string; cls: string }> = {
     cls: "bg-blue-50 text-blue-700 border-blue-200",
   },
 };
-
 function initials(name: string) {
   return (name || "?")
     .split(" ")
@@ -45,7 +41,6 @@ function initials(name: string) {
     .toUpperCase()
     .slice(0, 2);
 }
-
 function timeStr(ts?: string) {
   if (!ts) return "";
   return new Date(ts).toLocaleTimeString([], {
@@ -53,27 +48,19 @@ function timeStr(ts?: string) {
     minute: "2-digit",
   });
 }
-
 function relDay(ts?: string) {
   if (!ts) return "";
-
   const d = new Date(ts);
   const today = new Date();
-
   if (d.toDateString() === today.toDateString()) return "Today";
-
   const y = new Date(today);
   y.setDate(y.getDate() - 1);
-
   if (d.toDateString() === y.toDateString()) return "Yesterday";
-
   return d.toLocaleDateString();
 }
-
 export default function ChannelsPage() {
   const { activeCompany, user } = useAuth();
   const companyId = activeCompany?.id;
-
   const [channels, setChannels] = useState<Channel[]>([]);
   const [employees, setEmployees] = useState<AIEmployee[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -81,22 +68,102 @@ export default function ChannelsPage() {
   const [messages, setMessages] = useState<ChannelMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-
   // Mobile UI only
   const [mobileSidebar, setMobileSidebar] = useState<
     "channels" | "members" | null
   >(null);
-
   // composer
   const [senderMode, setSenderMode] = useState<"human" | string>("human");
   const [inputContent, setInputContent] = useState("");
-  const [msgType, setMsgType] = useState<
-    "DISCUSSION" | "TASK_REQUEST" | "DELEGATION" | "DECISION" | "STATUS_UPDATE"
-  >("DISCUSSION");
-  const [mentionId, setMentionId] = useState("");
+  const [showMentionPopover, setShowMentionPopover] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScrollRef = useRef(true);
+  const previousLastMessageIdRef = useRef<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const filteredCandidates = employees.filter(
+    (emp) =>
+      emp.name.toLowerCase().includes(mentionQuery.toLowerCase()) ||
+      emp.role.toLowerCase().includes(mentionQuery.toLowerCase())
+  );
+
+  const insertMention = (employeeName: string) => {
+    const cursorPos = inputRef.current?.selectionStart || inputContent.length;
+    const textBeforeCursor = inputContent.slice(0, cursorPos);
+    const lastAtIndex = textBeforeCursor.lastIndexOf("@");
+    if (lastAtIndex !== -1) {
+      const beforeAt = inputContent.slice(0, lastAtIndex);
+      const afterCursor = inputContent.slice(cursorPos);
+      const newContent = `${beforeAt}@${employeeName} ${afterCursor}`;
+      setInputContent(newContent);
+    } else {
+      setInputContent((prev) => `${prev} @${employeeName} `);
+    }
+    setShowMentionPopover(false);
+    setTimeout(() => inputRef.current?.focus(), 10);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setInputContent(val);
+
+    const cursorPos = e.target.selectionStart || val.length;
+    const textBeforeCursor = val.slice(0, cursorPos);
+    const lastAtIndex = textBeforeCursor.lastIndexOf("@");
+
+    if (lastAtIndex !== -1) {
+      const charBeforeAt = lastAtIndex > 0 ? textBeforeCursor[lastAtIndex - 1] : " ";
+      if (/\s/.test(charBeforeAt) || lastAtIndex === 0) {
+        const query = textBeforeCursor.slice(lastAtIndex + 1);
+        if (!/\s/.test(query)) {
+          setMentionQuery(query);
+          setShowMentionPopover(true);
+          setMentionSelectedIndex(0);
+          return;
+        }
+      }
+    }
+    setShowMentionPopover(false);
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (showMentionPopover && filteredCandidates.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setMentionSelectedIndex((prev) => (prev + 1) % filteredCandidates.length);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setMentionSelectedIndex(
+          (prev) => (prev - 1 + filteredCandidates.length) % filteredCandidates.length
+        );
+        return;
+      }
+      if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        const selected = filteredCandidates[mentionSelectedIndex];
+        if (selected) {
+          insertMention(selected.name);
+        }
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setShowMentionPopover(false);
+        return;
+      }
+    }
+
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
 
   // ── load data ────────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -104,33 +171,26 @@ export default function ChannelsPage() {
       setLoading(false);
       return;
     }
-
     setLoading(true);
-
     try {
       const [chRes, empRes, teamRes] = await Promise.all([
         api.getChannels(companyId),
         api.getEmployees(companyId),
         api.getTeams(companyId),
       ]);
-
       const fetchedTeams = teamRes.teams || [];
       const fetchedEmployees = empRes.employees || [];
       let fetchedChannels = chRes.channels || [];
-
       // Auto-create a dedicated channel for each team that doesn't have one
       for (const team of fetchedTeams) {
         const slug = team.name.toLowerCase().replace(/\s+/g, "-");
-
         const exists = fetchedChannels.some((c) => {
           const tid =
             typeof c.teamId === "object" && c.teamId !== null
               ? (c.teamId as any).id || (c.teamId as any)._id
               : c.teamId;
-
           return tid === team.id || c.name === slug;
         });
-
         if (!exists) {
           try {
             const res = await api.createChannel(companyId, {
@@ -140,18 +200,15 @@ export default function ChannelsPage() {
               topic: `${team.name} — team channel`,
               memberIds: team.members.map((m) => m.id),
             });
-
             fetchedChannels = [res.channel, ...fetchedChannels];
           } catch {
             /* already exists */
           }
         }
       }
-
       setTeams(fetchedTeams);
       setEmployees(fetchedEmployees);
       setChannels(fetchedChannels);
-
       if (!activeChannelId && fetchedChannels.length > 0) {
         setActiveChannelId(fetchedChannels[0].id);
       }
@@ -169,70 +226,91 @@ export default function ChannelsPage() {
   // ── poll messages ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!companyId || !activeChannelId) return;
-
     const fetch = async () => {
       try {
         const res = await api.getChannelMessages(
           companyId,
           activeChannelId
         );
-
-        setMessages(res.messages || []);
+        const fetched = res.messages || [];
+        setMessages((prev) => {
+          const map = new Map();
+          for (const m of fetched) {
+            const mid = m.id || (m as any)._id;
+            if (mid) map.set(mid, m);
+          }
+          return Array.from(map.values());
+        });
       } catch {
         /* silent */
       }
     };
-
     fetch();
-
     const iv = setInterval(fetch, 3000);
-
     return () => clearInterval(iv);
   }, [companyId, activeChannelId]);
 
-  // ── scroll to bottom ─────────────────────────────────────────────────────
+  // ── preserve user scroll position ────────────────────────────────────────
+  // Only auto-scroll when the user is already near the bottom. This prevents
+  // the 3-second message poll from pulling the user back down while reading
+  // older messages.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    shouldAutoScrollRef.current = true;
+    previousLastMessageIdRef.current = null;
+  }, [activeChannelId]);
+
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    const lastMessageId = lastMessage?.id || null;
+    if (
+      lastMessageId &&
+      lastMessageId !== previousLastMessageIdRef.current &&
+      shouldAutoScrollRef.current
+    ) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    previousLastMessageIdRef.current = lastMessageId;
   }, [messages]);
 
   // ── send message ─────────────────────────────────────────────────────────
   async function handleSend(e?: React.FormEvent) {
     if (e) e.preventDefault();
-
     if (!companyId || !activeChannelId || !inputContent.trim()) return;
 
     // Human sends through the first available clone as technical sender
     const resolvedSenderId =
       senderMode === "human" ? employees[0]?.id : senderMode;
-
     if (!resolvedSenderId) {
       alert("Add at least one AI employee first.");
       return;
     }
-
     const content =
       senderMode === "human"
         ? `[${user?.fullName || "You"}]: ${inputContent}`
         : inputContent;
 
+    // Automatically extract @mentions matching employee names
+    const mentions: string[] = [];
+    for (const emp of employees) {
+      if (inputContent.toLowerCase().includes(`@${emp.name.toLowerCase()}`)) {
+        mentions.push(emp.id);
+      }
+    }
+
     setSending(true);
-
     try {
-      const mentions = mentionId ? [mentionId] : [];
-
       const res = await api.sendMessage(companyId, activeChannelId, {
         senderId: resolvedSenderId,
         content,
-        messageType: msgType,
         mentions,
-        createTaskIfRequested:
-          msgType === "TASK_REQUEST" || msgType === "DELEGATION",
       });
-
-      setMessages((prev) => [...prev, res.message]);
+      setMessages((prev) => {
+        const mid = res.message.id || (res.message as any)._id;
+        if (prev.some((m) => (m.id || (m as any)._id) === mid)) return prev;
+        return [...prev, res.message];
+      });
       setInputContent("");
-      setMentionId("");
-
+      setShowMentionPopover(false);
       inputRef.current?.focus();
     } catch (err: any) {
       alert(err?.message || "Failed to send");
@@ -245,32 +323,26 @@ export default function ChannelsPage() {
   const activeChannel = channels.find(
     (c) => c.id === activeChannelId
   );
-
   const activeTeamId = activeChannel
     ? typeof activeChannel.teamId === "object" &&
       activeChannel.teamId !== null
       ? (activeChannel.teamId as any).id
       : activeChannel.teamId
     : null;
-
   const activeTeam = teams.find(
     (t) => t.id === activeTeamId
   );
-
   const channelMembers =
     activeTeam?.members ||
     (Array.isArray(activeChannel?.members)
       ? (activeChannel!.members as any[])
       : []);
-
   const teamChannels = channels.filter(
     (c) => c.type === "TEAM"
   );
-
   const crossChannels = channels.filter(
     (c) => c.type === "CROSS_TEAM"
   );
-
   const directChannels = channels.filter(
     (c) => c.type === "DIRECT"
   );
@@ -280,13 +352,10 @@ export default function ChannelsPage() {
     day: string;
     msgs: ChannelMessage[];
   };
-
   const grouped: MsgGroup[] = [];
-
   for (const msg of messages) {
     const day = relDay(msg.createdAt);
     const last = grouped[grouped.length - 1];
-
     if (!last || last.day !== day) {
       grouped.push({
         day,
@@ -305,7 +374,6 @@ export default function ChannelsPage() {
 
   return (
     <div className="h-[calc(100vh-3.5rem)] flex font-sans bg-white overflow-hidden relative">
-
       {/* ═══════════════════════════════════════════════════════════════
           MOBILE BACKDROP
       ═══════════════════════════════════════════════════════════════ */}
@@ -317,45 +385,36 @@ export default function ChannelsPage() {
           className="fixed inset-0 z-40 bg-slate-950/40 md:hidden cursor-default"
         />
       )}
-
       {/* ═══════════════════════════════════════════════════════════════
           LEFT SIDEBAR — DESKTOP
       ═══════════════════════════════════════════════════════════════ */}
       <aside className="hidden md:flex w-[220px] bg-slate-900 flex-col shrink-0 border-r border-slate-800">
-
         <div className="px-4 py-3.5 border-b border-slate-800">
           <p className="text-[13px] font-bold text-white truncate">
             {activeCompany?.name || "Workspace"}
           </p>
-
           <p className="text-[10px] font-mono text-slate-500 mt-0.5">
             Clone Channels
           </p>
         </div>
-
         <div className="flex-1 overflow-y-auto py-3 px-2 space-y-5">
-
           {/* Team channels */}
           {teamChannels.length > 0 && (
             <div>
               <p className="px-2 mb-1 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
                 Teams
               </p>
-
               {teamChannels.map((ch) => {
                 const tid =
                   typeof ch.teamId === "object" &&
                   ch.teamId !== null
                     ? (ch.teamId as any).id
                     : ch.teamId;
-
                 const team = teams.find(
                   (t) => t.id === tid
                 );
-
                 const active =
                   ch.id === activeChannelId;
-
                 return (
                   <button
                     key={ch.id}
@@ -371,11 +430,9 @@ export default function ChannelsPage() {
                     <span className="text-slate-500 shrink-0">
                       #
                     </span>
-
                     <span className="truncate flex-1">
                       {ch.name}
                     </span>
-
                     {team && (
                       <span className="text-[9px] text-slate-600 shrink-0">
                         {team.memberCount}
@@ -386,14 +443,12 @@ export default function ChannelsPage() {
               })}
             </div>
           )}
-
           {/* Cross-team */}
           {crossChannels.length > 0 && (
             <div>
               <p className="px-2 mb-1 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
                 Cross-Team
               </p>
-
               {crossChannels.map((ch) => (
                 <button
                   key={ch.id}
@@ -409,7 +464,6 @@ export default function ChannelsPage() {
                   <span className="text-slate-500 shrink-0">
                     ⇄
                   </span>
-
                   <span className="truncate">
                     {ch.name}
                   </span>
@@ -417,14 +471,12 @@ export default function ChannelsPage() {
               ))}
             </div>
           )}
-
           {/* Direct */}
           {directChannels.length > 0 && (
             <div>
               <p className="px-2 mb-1 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
                 Direct
               </p>
-
               {directChannels.map((ch) => (
                 <button
                   key={ch.id}
@@ -440,7 +492,6 @@ export default function ChannelsPage() {
                   <span className="text-slate-500 shrink-0">
                     ●
                   </span>
-
                   <span className="truncate">
                     {ch.name}
                   </span>
@@ -448,13 +499,11 @@ export default function ChannelsPage() {
               ))}
             </div>
           )}
-
           {/* Clones */}
           <div>
             <p className="px-2 mb-1 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
               Clones
             </p>
-
             {employees.map((emp) => (
               <div
                 key={emp.id}
@@ -469,7 +518,6 @@ export default function ChannelsPage() {
                       : "bg-slate-600"
                   }`}
                 />
-
                 <span className="text-[11px] font-mono text-slate-400 truncate">
                   {emp.name}
                 </span>
@@ -478,7 +526,6 @@ export default function ChannelsPage() {
           </div>
         </div>
       </aside>
-
       {/* ═══════════════════════════════════════════════════════════════
           MOBILE CHANNEL DRAWER
       ═══════════════════════════════════════════════════════════════ */}
@@ -494,12 +541,10 @@ export default function ChannelsPage() {
             <p className="text-[13px] font-bold text-white truncate">
               {activeCompany?.name || "Workspace"}
             </p>
-
             <p className="text-[10px] font-mono text-slate-500 mt-0.5">
               Clone Channels
             </p>
           </div>
-
           <button
             type="button"
             onClick={() => setMobileSidebar(null)}
@@ -508,27 +553,22 @@ export default function ChannelsPage() {
             ×
           </button>
         </div>
-
         <div className="flex-1 overflow-y-auto py-3 px-2 space-y-5">
-
           {/* Teams */}
           {teamChannels.length > 0 && (
             <div>
               <p className="px-2 mb-1 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
                 Teams
               </p>
-
               {teamChannels.map((ch) => {
                 const tid =
                   typeof ch.teamId === "object" &&
                   ch.teamId !== null
                     ? (ch.teamId as any).id
                     : ch.teamId;
-
                 const team = teams.find(
                   (t) => t.id === tid
                 );
-
                 return (
                   <button
                     key={ch.id}
@@ -544,11 +584,9 @@ export default function ChannelsPage() {
                     <span className="text-slate-500 shrink-0">
                       #
                     </span>
-
                     <span className="truncate flex-1">
                       {ch.name}
                     </span>
-
                     {team && (
                       <span className="text-[9px] text-slate-600">
                         {team.memberCount}
@@ -559,14 +597,12 @@ export default function ChannelsPage() {
               })}
             </div>
           )}
-
           {/* Cross Team */}
           {crossChannels.length > 0 && (
             <div>
               <p className="px-2 mb-1 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
                 Cross-Team
               </p>
-
               {crossChannels.map((ch) => (
                 <button
                   key={ch.id}
@@ -582,7 +618,6 @@ export default function ChannelsPage() {
                   <span className="text-slate-500">
                     ⇄
                   </span>
-
                   <span className="truncate">
                     {ch.name}
                   </span>
@@ -590,14 +625,12 @@ export default function ChannelsPage() {
               ))}
             </div>
           )}
-
           {/* Direct */}
           {directChannels.length > 0 && (
             <div>
               <p className="px-2 mb-1 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
                 Direct
               </p>
-
               {directChannels.map((ch) => (
                 <button
                   key={ch.id}
@@ -613,7 +646,6 @@ export default function ChannelsPage() {
                   <span className="text-slate-500">
                     ●
                   </span>
-
                   <span className="truncate">
                     {ch.name}
                   </span>
@@ -621,13 +653,11 @@ export default function ChannelsPage() {
               ))}
             </div>
           )}
-
           {/* Clones */}
           <div>
             <p className="px-2 mb-1 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
               Clones
             </p>
-
             {employees.map((emp) => (
               <div
                 key={emp.id}
@@ -642,7 +672,6 @@ export default function ChannelsPage() {
                       : "bg-slate-600"
                   }`}
                 />
-
                 <span className="text-[11px] font-mono text-slate-400 truncate">
                   {emp.name}
                 </span>
@@ -651,17 +680,13 @@ export default function ChannelsPage() {
           </div>
         </div>
       </aside>
-
       {/* ═══════════════════════════════════════════════════════════════
           MAIN CHAT
       ═══════════════════════════════════════════════════════════════ */}
       <div className="flex-1 flex flex-col min-w-0">
-
         {/* Header */}
         <div className="min-h-12 border-b border-slate-200 px-3 sm:px-5 py-2 flex items-center justify-between gap-2 shrink-0 bg-white">
-
           <div className="flex items-center gap-2 min-w-0 flex-1">
-
             {/* Mobile channels */}
             <button
               type="button"
@@ -673,25 +698,21 @@ export default function ChannelsPage() {
             >
               ☰
             </button>
-
             <span className="text-[17px] sm:text-[18px] font-bold text-slate-300 shrink-0">
               #
             </span>
-
             <div className="min-w-0">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="text-[13px] sm:text-[14px] font-bold text-slate-900 truncate">
                   {activeChannel?.name ||
                     "Select a channel"}
                 </span>
-
                 {activeChannel?.type && (
                   <span className="hidden sm:inline text-[9px] font-mono font-bold px-1.5 py-0.5 bg-slate-100 text-slate-500 border border-slate-200 shrink-0">
                     {activeChannel.type}
                   </span>
                 )}
               </div>
-
               {activeChannel?.topic && (
                 <span className="hidden lg:block text-[11px] text-slate-400 truncate">
                   — {activeChannel.topic}
@@ -699,7 +720,6 @@ export default function ChannelsPage() {
               )}
             </div>
           </div>
-
           {/* Mobile members button / Desktop member avatars */}
           {channelMembers.length > 0 && (
             <>
@@ -723,12 +743,10 @@ export default function ChannelsPage() {
                       </div>
                     ))}
                 </div>
-
                 <span className="text-[10px] text-slate-500 font-mono">
                   {channelMembers.length}
                 </span>
               </button>
-
               <div className="hidden lg:flex items-center gap-1.5 shrink-0">
                 <div className="flex -space-x-1">
                   {channelMembers
@@ -743,7 +761,6 @@ export default function ChannelsPage() {
                       </div>
                     ))}
                 </div>
-
                 <span className="text-[11px] text-slate-400 font-mono">
                   {channelMembers.length} members
                 </span>
@@ -751,10 +768,19 @@ export default function ChannelsPage() {
             </>
           )}
         </div>
-
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-3 bg-white">
-
+        <div
+          ref={messagesContainerRef}
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            const distanceFromBottom =
+              el.scrollHeight - el.scrollTop - el.clientHeight;
+            // Keep auto-scroll enabled only while the user is near the bottom.
+            // A small threshold accounts for touch/trackpad scrolling.
+            shouldAutoScrollRef.current = distanceFromBottom < 100;
+          }}
+          className="flex-1 overflow-y-auto px-3 sm:px-5 py-3 bg-white"
+        >
           {loading ? (
             <div className="h-full flex items-center justify-center">
               <p className="text-[12px] text-slate-400 font-mono">
@@ -766,84 +792,67 @@ export default function ChannelsPage() {
               <div className="w-12 h-12 bg-slate-100 flex items-center justify-center text-2xl font-bold text-slate-400">
                 #
               </div>
-
               <p className="text-[14px] font-bold text-slate-700">
                 {activeChannel
                   ? `#${activeChannel.name}`
                   : "Select a channel to start"}
               </p>
-
               <p className="text-[12px] text-slate-400 max-w-xs leading-relaxed">
                 {activeTeam
-                  ? `This is the dedicated channel for the ${activeTeam.name} team. Send a message, @mention a clone, or create a task.`
+                  ? `This is the dedicated channel for the ${activeTeam.name} team. Send a message, @mention a clone, or type a request.`
                   : "Send a message below."}
               </p>
             </div>
           ) : (
             <div className="space-y-0.5">
-
               {grouped.map(({ day, msgs }) => (
                 <div key={day}>
-
                   {/* Day divider */}
                   <div className="flex items-center gap-2 sm:gap-3 py-3">
                     <div className="flex-1 h-px bg-slate-100" />
-
                     <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 font-mono shrink-0">
                       {day}
                     </span>
-
                     <div className="flex-1 h-px bg-slate-100" />
                   </div>
-
                   {msgs.map((msg, i) => {
                     const sender: any =
                       msg.senderId || {};
-
                     const badge =
                       MSG_BADGES[msg.messageType] ||
                       MSG_BADGES.DISCUSSION;
-
                     const content =
                       typeof msg.content === "string"
                         ? msg.content
                         : "";
-
                     const isHuman =
                       content.startsWith("[") &&
                       content.includes("]: ");
-
                     const humanName = isHuman
                       ? content.match(
                           /^\[([^\]]+)\]/
                         )?.[1] || "You"
                       : null;
-
                     const displayText = isHuman
                       ? content.replace(
                           /^\[[^\]]+\]:\s/,
                           ""
                         )
                       : content;
-
                     const mentions: any[] =
                       Array.isArray(msg.mentions)
                         ? msg.mentions
                         : [];
-
                     const prev = msgs[i - 1];
-
                     const prevSender: any =
                       prev?.senderId || {};
-
                     const compact =
                       !isHuman &&
                       prevSender?.id &&
                       prevSender.id === sender?.id;
-
                     return (
                       <div
-                        key={msg.id}
+                        key={msg.id ? `${msg.id}-${i}` : `msg-${i}`}
                         className={`group flex items-start gap-2 sm:gap-3 px-1.5 sm:px-2 py-1 -mx-1.5 sm:-mx-2 rounded hover:bg-slate-50 transition-colors ${
                           compact ? "" : "mt-3"
                         }`}
@@ -859,26 +868,28 @@ export default function ChannelsPage() {
                           </div>
                         ) : (
                           <div
-                            className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-[10px] sm:text-[11px] font-bold font-mono shrink-0 ${
+                            className={`w-7 h-7 sm:w-8 sm:h-8 shrink-0 overflow-hidden ${
                               isHuman
-                                ? "bg-blue-600 text-white"
-                                : "bg-slate-800 text-white"
+                                ? "bg-blue-600"
+                                : "bg-slate-800"
                             }`}
                           >
-                            {isHuman
-                              ? initials(
-                                  humanName ||
-                                    "You"
-                                )
-                              : initials(
-                                  sender.name ||
-                                    "?"
-                                )}
+                            {!isHuman && sender.avatarUrl ? (
+                              <img
+                                src={sender.avatarUrl}
+                                alt={sender.name || "Clone"}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className={`w-full h-full flex items-center justify-center text-[10px] sm:text-[11px] font-bold font-mono text-white`}>
+                                {isHuman
+                                  ? initials(humanName || "You")
+                                  : initials(sender.name || "?")}
+                              </span>
+                            )}
                           </div>
                         )}
-
                         <div className="flex-1 min-w-0">
-
                           {/* Name row */}
                           {!compact && (
                             <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 flex-wrap">
@@ -892,25 +903,21 @@ export default function ChannelsPage() {
                                     {sender.name ||
                                       "Clone"}
                                   </span>
-
                                   <span className="text-[9px] sm:text-[10px] text-slate-400 font-mono">
                                     {sender.role}
                                   </span>
                                 </>
                               )}
-
                               <span className="text-[9px] sm:text-[10px] text-slate-400 font-mono">
                                 {timeStr(
                                   msg.createdAt
                                 )}
                               </span>
-
                               <span
                                 className={`text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 border ${badge.cls}`}
                               >
                                 {badge.label}
                               </span>
-
                               {!isHuman && (
                                 <span className="text-[8px] sm:text-[9px] font-mono text-violet-600 bg-violet-50 border border-violet-100 px-1.5 py-0.5">
                                   AI
@@ -918,15 +925,13 @@ export default function ChannelsPage() {
                               )}
                             </div>
                           )}
-
                           {/* Content */}
                           <div className="break-words [overflow-wrap:anywhere]">
                             <FormattedText
                               content={displayText}
-                              isUser={isHuman}
+                              isUser={false}
                             />
                           </div>
-
                           {/* Mentions */}
                           {mentions.length > 0 && (
                             <div className="flex items-center gap-1 mt-1 flex-wrap">
@@ -944,22 +949,18 @@ export default function ChannelsPage() {
                               )}
                             </div>
                           )}
-
                           {/* Linked task */}
                           {msg.taskId && (
                             <div className="mt-1.5 inline-flex flex-wrap items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 bg-amber-50 border border-amber-200 text-[10px] sm:text-[11px] font-mono max-w-full">
                               <span className="w-1.5 h-1.5 bg-amber-500 rounded-full shrink-0" />
-
                               <span className="font-bold text-amber-800">
                                 Task:
                               </span>
-
                               <span className="text-amber-700 truncate max-w-[160px] sm:max-w-none">
                                 {(msg.taskId as any)
                                   .title ||
                                   "Created"}
                               </span>
-
                               <span className="text-[8px] sm:text-[9px] font-bold text-amber-600 border border-amber-300 bg-amber-100 px-1">
                                 {(msg.taskId as any)
                                   .status ||
@@ -973,12 +974,10 @@ export default function ChannelsPage() {
                   })}
                 </div>
               ))}
-
               <div ref={bottomRef} />
             </div>
           )}
         </div>
-
         {/* ═════════════════════════════════════════════════════════════
             COMPOSER
         ═════════════════════════════════════════════════════════════ */}
@@ -987,16 +986,13 @@ export default function ChannelsPage() {
             onSubmit={handleSend}
             className="space-y-2"
           >
-
             {/* Controls */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-[10px] sm:text-[11px] font-mono">
-
+            <div className="flex items-center justify-between gap-2 flex-wrap text-[10px] sm:text-[11px] font-mono">
               {/* Sender */}
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="text-slate-500 shrink-0">
                   Send as:
                 </span>
-
                 <select
                   value={senderMode}
                   onChange={(e) =>
@@ -1008,7 +1004,6 @@ export default function ChannelsPage() {
                     👤 You (
                     {user?.fullName || "Human"})
                   </option>
-
                   {employees.map((emp) => (
                     <option
                       key={emp.id}
@@ -1019,81 +1014,53 @@ export default function ChannelsPage() {
                   ))}
                 </select>
               </div>
-
-              {/* Type */}
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="text-slate-500 shrink-0">
-                  Type:
-                </span>
-
-                <select
-                  value={msgType}
-                  onChange={(e: any) =>
-                    setMsgType(e.target.value)
-                  }
-                  className="h-7 max-w-[150px] sm:max-w-none px-2 bg-white border border-slate-200 text-[10px] sm:text-[11px] font-mono focus:outline-none focus:border-slate-400 cursor-pointer"
-                >
-                  <option value="DISCUSSION">
-                    💬 Discussion
-                  </option>
-                  <option value="TASK_REQUEST">
-                    📋 Task Request
-                  </option>
-                  <option value="DELEGATION">
-                    🔀 Delegation
-                  </option>
-                  <option value="DECISION">
-                    ✅ Decision
-                  </option>
-                  <option value="STATUS_UPDATE">
-                    📊 Status Update
-                  </option>
-                </select>
-              </div>
-
-              {/* Mention */}
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="text-slate-500 shrink-0">
-                  @mention:
-                </span>
-
-                <select
-                  value={mentionId}
-                  onChange={(e) =>
-                    setMentionId(e.target.value)
-                  }
-                  className="h-7 max-w-[140px] sm:max-w-none px-2 bg-white border border-slate-200 text-[10px] sm:text-[11px] font-mono focus:outline-none focus:border-slate-400 cursor-pointer"
-                >
-                  <option value="">
-                    None
-                  </option>
-
-                  {employees.map((emp) => (
-                    <option
-                      key={emp.id}
-                      value={emp.id}
-                    >
-                      @{emp.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {(msgType === "TASK_REQUEST" ||
-                msgType === "DELEGATION") &&
-                mentionId && (
-                  <span className="text-amber-600 text-[9px] sm:text-[10px]">
-                    ⚡ Auto-creates a task for the
-                    mentioned clone
-                  </span>
-                )}
+              <span className="text-[10px] text-slate-400 font-mono">
+                💡 Type <code className="text-blue-600 font-bold bg-slate-100 px-1">@</code> to tag a clone
+              </span>
             </div>
-
             {/* Input */}
-            <div className="flex flex-col sm:flex-row gap-2">
-
+            <div className="flex flex-col sm:flex-row gap-2 relative">
+              {/* Mention Popover */}
+              {showMentionPopover && filteredCandidates.length > 0 && (
+                <div className="absolute bottom-full left-0 mb-1.5 w-72 bg-slate-900 border border-slate-700 shadow-2xl rounded-md overflow-hidden z-50">
+                  <div className="px-3 py-1.5 bg-slate-800/90 border-b border-slate-700 text-[10px] font-mono text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>Tag a Clone</span>
+                    <span className="text-[9px] text-slate-500">↑↓ to navigate, Enter to insert</span>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto py-1">
+                    {filteredCandidates.map((emp, idx) => (
+                      <button
+                        key={emp.id}
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          insertMention(emp.name);
+                        }}
+                        className={`w-full text-left px-3 py-2 flex items-center gap-2.5 text-[12px] font-mono transition-colors cursor-pointer ${
+                          idx === mentionSelectedIndex
+                            ? "bg-blue-600 text-white font-bold"
+                            : "text-slate-200 hover:bg-slate-800"
+                        }`}
+                      >
+                        <span
+                          className={`w-2 h-2 rounded-full shrink-0 ${
+                            emp.status === "WORKING"
+                              ? "bg-blue-400 animate-pulse"
+                              : emp.status === "ACTIVE"
+                              ? "bg-emerald-400"
+                              : "bg-slate-500"
+                          }`}
+                        />
+                        <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                          <span className="font-bold truncate">@{emp.name}</span>
+                          <span className="text-[10px] opacity-75 truncate">{emp.role}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="flex-1 min-w-0 flex items-center border border-slate-200 bg-white px-3 focus-within:border-slate-400 transition-colors gap-2">
-
                 <span
                   className={`text-[10px] sm:text-[11px] font-mono font-semibold shrink-0 max-w-[70px] sm:max-w-none truncate ${
                     senderMode === "human"
@@ -1111,46 +1078,22 @@ export default function ChannelsPage() {
                       )?.name?.split(" ")[0] ||
                       "Clone"}
                 </span>
-
                 <span className="text-slate-200 shrink-0">
                   |
                 </span>
-
                 <input
                   ref={inputRef}
                   type="text"
                   value={inputContent}
-                  onChange={(e) =>
-                    setInputContent(
-                      e.target.value
-                    )
-                  }
-                  onKeyDown={(e) => {
-                    if (
-                      e.key === "Enter" &&
-                      !e.shiftKey
-                    ) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
+                  onChange={handleInputChange}
+                  onKeyDown={handleInputKeyDown}
                   placeholder={`Message #${
                     activeChannel?.name ||
                     "channel"
-                  }${
-                    mentionId
-                      ? ` — @${
-                          employees.find(
-                            (e) =>
-                              e.id === mentionId
-                          )?.name
-                        }`
-                      : ""
-                  }…`}
+                  }… (type @ to mention)`}
                   className="flex-1 min-w-0 h-9 text-[12px] sm:text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none bg-transparent"
                 />
               </div>
-
               <button
                 type="submit"
                 disabled={
@@ -1166,51 +1109,45 @@ export default function ChannelsPage() {
           </form>
         </div>
       </div>
-
       {/* ═══════════════════════════════════════════════════════════════
           RIGHT SIDEBAR — DESKTOP
       ═══════════════════════════════════════════════════════════════ */}
       {(activeTeam ||
         channelMembers.length > 0) && (
         <aside className="hidden lg:flex w-[190px] bg-slate-50 border-l border-slate-200 flex-col shrink-0">
-
           <div className="px-4 py-3 border-b border-slate-200">
             <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wide truncate">
               {activeTeam?.name ||
                 "Members"}
             </p>
-
             <p className="text-[10px] text-slate-400 font-mono mt-0.5">
               {channelMembers.length} members
             </p>
           </div>
-
           <div className="flex-1 overflow-y-auto py-2">
-
             {channelMembers.map(
               (m: any) => {
                 const full =
                   employees.find(
                     (e) => e.id === m.id
                   );
-
                 const isLead =
                   m.id ===
                     activeTeam?.leadEmployeeId ||
                   m.id ===
                     activeTeam
                       ?.leadEmployee?.id;
-
                 return (
                   <div
                     key={m.id}
                     className="px-3 py-2 flex items-center gap-2 hover:bg-slate-100 transition-colors"
                   >
                     <div className="relative shrink-0">
-                      <div className="w-7 h-7 bg-slate-800 text-white text-[10px] font-bold font-mono flex items-center justify-center">
-                        {initials(m.name)}
+                      <div className="w-7 h-7 bg-slate-800 text-white text-[10px] font-bold font-mono flex items-center justify-center overflow-hidden">
+                        {(employees.find(e => e.id === m.id)?.avatarUrl) ? (
+                          <img src={employees.find(e => e.id === m.id)!.avatarUrl!} alt={m.name} className="w-full h-full object-cover" />
+                        ) : initials(m.name)}
                       </div>
-
                       <span
                         className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white ${
                           (full?.status ||
@@ -1225,17 +1162,14 @@ export default function ChannelsPage() {
                         }`}
                       />
                     </div>
-
                     <div className="flex-1 min-w-0">
                       <p className="text-[11px] font-semibold text-slate-800 truncate">
                         {m.name}
                       </p>
-
                       <p className="text-[9px] text-slate-400 font-mono truncate">
                         {m.role}
                       </p>
                     </div>
-
                     {isLead && (
                       <span className="text-[9px]">
                         👑
@@ -1245,7 +1179,6 @@ export default function ChannelsPage() {
                 );
               }
             )}
-
             {/* You */}
             <div className="mx-3 mt-1 pt-2 border-t border-slate-200 flex items-center gap-2">
               <div className="w-7 h-7 bg-blue-600 text-white text-[10px] font-bold font-mono flex items-center justify-center shrink-0">
@@ -1253,23 +1186,19 @@ export default function ChannelsPage() {
                   user?.fullName || "You"
                 )}
               </div>
-
               <div className="flex-1 min-w-0">
                 <p className="text-[11px] font-semibold text-blue-700 truncate">
                   {user?.fullName || "You"}
                 </p>
-
                 <p className="text-[9px] text-slate-400 font-mono">
                   Human
                 </p>
               </div>
-
               <span className="w-2 h-2 rounded-full bg-emerald-400 border border-white shrink-0" />
             </div>
           </div>
         </aside>
       )}
-
       {/* ═══════════════════════════════════════════════════════════════
           MOBILE MEMBERS DRAWER
       ═══════════════════════════════════════════════════════════════ */}
@@ -1282,19 +1211,16 @@ export default function ChannelsPage() {
               : "translate-x-full"
           }`}
         >
-
           <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
             <div className="min-w-0">
               <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wide truncate">
                 {activeTeam?.name ||
                   "Members"}
               </p>
-
               <p className="text-[10px] text-slate-400 font-mono mt-0.5">
                 {channelMembers.length} members
               </p>
             </div>
-
             <button
               type="button"
               onClick={() =>
@@ -1305,33 +1231,30 @@ export default function ChannelsPage() {
               ×
             </button>
           </div>
-
           <div className="flex-1 overflow-y-auto py-2">
-
             {channelMembers.map(
               (m: any) => {
                 const full =
                   employees.find(
                     (e) => e.id === m.id
                   );
-
                 const isLead =
                   m.id ===
                     activeTeam?.leadEmployeeId ||
                   m.id ===
                     activeTeam
                       ?.leadEmployee?.id;
-
                 return (
                   <div
                     key={m.id}
                     className="px-4 py-3 flex items-center gap-3 hover:bg-slate-100"
                   >
                     <div className="relative shrink-0">
-                      <div className="w-8 h-8 bg-slate-800 text-white text-[10px] font-bold font-mono flex items-center justify-center">
-                        {initials(m.name)}
+                      <div className="w-8 h-8 bg-slate-800 text-white text-[10px] font-bold font-mono flex items-center justify-center overflow-hidden">
+                        {(employees.find(e => e.id === m.id)?.avatarUrl) ? (
+                          <img src={employees.find(e => e.id === m.id)!.avatarUrl!} alt={m.name} className="w-full h-full object-cover" />
+                        ) : initials(m.name)}
                       </div>
-
                       <span
                         className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-50 ${
                           (full?.status ||
@@ -1346,17 +1269,14 @@ export default function ChannelsPage() {
                         }`}
                       />
                     </div>
-
                     <div className="flex-1 min-w-0">
                       <p className="text-[12px] font-semibold text-slate-800 truncate">
                         {m.name}
                       </p>
-
                       <p className="text-[10px] text-slate-400 font-mono truncate">
                         {m.role}
                       </p>
                     </div>
-
                     {isLead && (
                       <span className="text-[10px]">
                         👑
@@ -1366,7 +1286,6 @@ export default function ChannelsPage() {
                 );
               }
             )}
-
             {/* You */}
             <div className="mx-4 mt-2 pt-3 border-t border-slate-200 flex items-center gap-3">
               <div className="w-8 h-8 bg-blue-600 text-white text-[10px] font-bold font-mono flex items-center justify-center shrink-0">
@@ -1374,17 +1293,14 @@ export default function ChannelsPage() {
                   user?.fullName || "You"
                 )}
               </div>
-
               <div className="flex-1 min-w-0">
                 <p className="text-[12px] font-semibold text-blue-700 truncate">
                   {user?.fullName || "You"}
                 </p>
-
                 <p className="text-[10px] text-slate-400 font-mono">
                   Human
                 </p>
               </div>
-
               <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
             </div>
           </div>

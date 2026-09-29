@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -13,10 +13,21 @@ const ROLES = [
   { id: "custom", title: "Custom AI Role", desc: "Design a unique autonomous role with custom tools, system prompts, and memory scope." },
 ];
 
+function initials(name: string) {
+  return (name || "?")
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
 export default function NewEmployeePage() {
   const router = useRouter();
   const { activeCompany } = useAuth();
   const companyId = activeCompany?.id;
+  const cloudinaryRef = useRef<any>(null);
+  const widgetRef = useRef<any>(null);
 
   const [step, setStep] = useState(1);
   const [rolePreset, setRolePreset] = useState("cto");
@@ -26,9 +37,85 @@ export default function NewEmployeePage() {
   const [personality, setPersonality] = useState("Pragmatic, analytical, high security standards, focused on clean architecture.");
   const [systemInstructions, setSystemInstructions] = useState("Analyze repositories, create task blueprints, enforce architectural standards, write modular TypeScript with unit tests.");
   const [maxMonthlySpend, setMaxMonthlySpend] = useState(500);
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+  const cloudinaryReady = !!(cloudName && uploadPreset && cloudName !== "your_cloud_name_here");
+
+  const openCloudinaryWidget = () => {
+    if (!cloudinaryReady) {
+      alert("Cloudinary is not configured yet. Please set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET in your .env.local file.");
+      return;
+    }
+
+    if (typeof window === "undefined" || !(window as any).cloudinary) {
+      // Load Cloudinary script dynamically
+      const script = document.createElement("script");
+      script.src = "https://upload-widget.cloudinary.com/global/all.js";
+      script.onload = () => openWidget();
+      document.head.appendChild(script);
+    } else {
+      openWidget();
+    }
+  };
+
+  const openWidget = () => {
+    const cld = (window as any).cloudinary;
+    if (!cld) return;
+    const widget = cld.createUploadWidget(
+      {
+        cloudName,
+        uploadPreset,
+        cropping: true,
+        croppingAspectRatio: 1,
+        showSkipCropButton: false,
+        maxFiles: 1,
+        resourceType: "image",
+        sources: ["local", "url", "camera"],
+        styles: {
+          palette: {
+            window: "#0f172a",
+            windowBorder: "#334155",
+            tabIcon: "#6366f1",
+            menuIcons: "#94a3b8",
+            textDark: "#f8fafc",
+            textLight: "#1e293b",
+            link: "#6366f1",
+            action: "#6366f1",
+            inactiveTabIcon: "#475569",
+            error: "#f43f5e",
+            inProgress: "#6366f1",
+            complete: "#22c55e",
+            sourceBg: "#1e293b",
+          },
+          fonts: {
+            default: null,
+            "'Inter', sans-serif": {
+              url: "https://fonts.googleapis.com/css?family=Inter",
+              active: true,
+            },
+          },
+        },
+      },
+      (error: any, result: any) => {
+        if (!error && result && result.event === "success") {
+          setAvatarUrl(result.info.secure_url);
+        }
+        if (result && result.event === "queues-end") {
+          setAvatarUploading(false);
+        }
+        if (result && result.event === "upload-added") {
+          setAvatarUploading(true);
+        }
+      }
+    );
+    widget.open();
+  };
 
   const handleDeploy = async () => {
     if (!companyId) {
@@ -45,6 +132,7 @@ export default function NewEmployeePage() {
         personality,
         systemInstructions,
         maxMonthlySpend: Number(maxMonthlySpend),
+        ...(avatarUrl ? { avatarUrl } : {}),
       });
       router.push("/employees");
     } catch (err: any) {
@@ -160,6 +248,59 @@ export default function NewEmployeePage() {
               placeholder="Technical architect leading backend migration initiatives."
               className="w-full bg-slate-50 border border-slate-200 px-3.5 py-2.5 text-sm font-mono text-slate-900 focus:outline-none focus:border-slate-900 focus:bg-white"
             />
+          </div>
+
+          {/* ── Profile Picture ── */}
+          <div className="pt-4 border-t border-slate-100">
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-3 font-mono">
+              Profile Picture <span className="text-slate-400 normal-case font-normal">(optional)</span>
+            </label>
+            <div className="flex items-center gap-4">
+              {/* Avatar Preview */}
+              <div className="w-16 h-16 bg-slate-800 text-white flex items-center justify-center shrink-0 overflow-hidden border-2 border-slate-200">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-lg font-bold font-mono">{initials(name)}</span>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={openCloudinaryWidget}
+                  disabled={avatarUploading}
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-700 text-white text-xs font-semibold font-mono transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                >
+                  {avatarUploading ? (
+                    <>
+                      <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Uploading…
+                    </>
+                  ) : avatarUrl ? (
+                    "Change Photo"
+                  ) : (
+                    "Upload Photo"
+                  )}
+                </button>
+                {!cloudinaryReady && (
+                  <p className="text-[10px] font-mono text-amber-600">
+                    ⚠️ Set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME &amp; NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET in .env.local to enable uploads
+                  </p>
+                )}
+                {avatarUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setAvatarUrl("")}
+                    className="text-[10px] font-mono text-rose-500 hover:text-rose-700 text-left"
+                  >
+                    Remove photo
+                  </button>
+                )}
+                <p className="text-[10px] font-mono text-slate-400">
+                  PNG, JPG or GIF · Max 5MB · Will be cropped to square
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end pt-4 border-t border-slate-100">

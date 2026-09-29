@@ -270,6 +270,63 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   const [employee, setEmployee] = useState<AIEmployee | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarSaving, setAvatarSaving] = useState(false);
+
+  const cloudName = typeof process !== "undefined" ? process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME : undefined;
+  const uploadPreset = typeof process !== "undefined" ? process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET : undefined;
+  const cloudinaryReady = !!(cloudName && uploadPreset && cloudName !== "your_cloud_name_here");
+
+  const openCloudinaryWidget = () => {
+    if (!cloudinaryReady) {
+      alert("Cloudinary is not configured. Set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME & NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET in .env.local");
+      return;
+    }
+    const launchWidget = () => {
+      const cld = (window as any).cloudinary;
+      if (!cld) return;
+      const widget = cld.createUploadWidget(
+        {
+          cloudName,
+          uploadPreset,
+          cropping: true,
+          croppingAspectRatio: 1,
+          showSkipCropButton: false,
+          maxFiles: 1,
+          resourceType: "image",
+          sources: ["local", "url", "camera"],
+          styles: { palette: { window: "#0f172a", windowBorder: "#334155", tabIcon: "#6366f1", menuIcons: "#94a3b8", textDark: "#f8fafc", textLight: "#1e293b", link: "#6366f1", action: "#6366f1", inactiveTabIcon: "#475569", error: "#f43f5e", inProgress: "#6366f1", complete: "#22c55e", sourceBg: "#1e293b" } },
+        },
+        async (error: any, result: any) => {
+          if (!error && result && result.event === "success") {
+            const url = result.info.secure_url;
+            if (employee && companyId) {
+              setAvatarSaving(true);
+              try {
+                await api.patchEmployee(companyId, employee.id, { avatarUrl: url });
+                setEmployee({ ...employee, avatarUrl: url });
+              } catch (e: any) {
+                alert(`Failed to save avatar: ${e?.message}`);
+              } finally {
+                setAvatarSaving(false);
+              }
+            }
+          }
+          if (result?.event === "queues-end") setAvatarUploading(false);
+          if (result?.event === "upload-added") setAvatarUploading(true);
+        }
+      );
+      widget.open();
+    };
+    if (typeof window !== "undefined" && !(window as any).cloudinary) {
+      const script = document.createElement("script");
+      script.src = "https://upload-widget.cloudinary.com/global/all.js";
+      script.onload = launchWidget;
+      document.head.appendChild(script);
+    } else {
+      launchWidget();
+    }
+  };
 
   // Chat tab state & history
   const [conversations, setConversations] = useState<Array<{ id: string; title: string; updatedAt?: string }>>([]);
@@ -898,8 +955,12 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
             ← Back to AI Employees
           </Link>
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-slate-900 text-white font-mono font-bold text-lg flex items-center justify-center shrink-0">
-              {(employee?.name || "AI")[0]}
+            <div className="w-12 h-12 bg-slate-900 text-white font-mono font-bold text-lg flex items-center justify-center shrink-0 overflow-hidden">
+              {employee?.avatarUrl ? (
+                <img src={employee.avatarUrl} alt={employee.name} className="w-full h-full object-cover" />
+              ) : (
+                (employee?.name || "AI")[0]
+              )}
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -2059,6 +2120,51 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
             <div className="bg-white border border-slate-200 p-6">
               <h3 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider font-mono mb-4">Short Description</h3>
               <p className="text-[12px] text-slate-600">{employee?.shortDescription || "Not set."}</p>
+            </div>
+
+            {/* Profile Picture */}
+            <div className="bg-white border border-slate-200 p-6">
+              <h3 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider font-mono mb-4">Profile Picture</h3>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-slate-800 flex items-center justify-center shrink-0 overflow-hidden border-2 border-slate-200">
+                  {employee?.avatarUrl ? (
+                    <img src={employee.avatarUrl} alt={employee.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-white text-xl font-bold font-mono">{(employee?.name || "?")[0]}</span>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={openCloudinaryWidget}
+                    disabled={avatarUploading || avatarSaving}
+                    className="px-4 py-2 bg-slate-900 hover:bg-slate-700 text-white text-xs font-semibold font-mono transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {avatarUploading || avatarSaving ? (
+                      <><span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />{avatarSaving ? "Saving…" : "Uploading…"}</>
+                    ) : employee?.avatarUrl ? "Change Photo" : "Upload Photo"}
+                  </button>
+                  {!cloudinaryReady && (
+                    <p className="text-[10px] font-mono text-amber-600">⚠️ Set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME &amp; NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET in .env.local</p>
+                  )}
+                  {employee?.avatarUrl && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!companyId || !employee) return;
+                        try {
+                          await api.patchEmployee(companyId, employee.id, { avatarUrl: null });
+                          setEmployee({ ...employee, avatarUrl: undefined });
+                        } catch (e: any) { alert(`Failed: ${e?.message}`); }
+                      }}
+                      className="text-[10px] font-mono text-rose-500 hover:text-rose-700 text-left"
+                    >
+                      Remove photo
+                    </button>
+                  )}
+                  <p className="text-[10px] font-mono text-slate-400">PNG, JPG or GIF · Max 5MB · Cropped to square</p>
+                </div>
+              </div>
             </div>
           </div>
 

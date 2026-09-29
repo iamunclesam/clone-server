@@ -337,6 +337,17 @@ export const api = {
     });
   },
 
+  async patchEmployee(
+    companyId: string,
+    employeeId: string,
+    data: { name?: string; systemInstructions?: string; personality?: string; maxMonthlySpend?: number; avatarUrl?: string | null }
+  ): Promise<{ updated: boolean }> {
+    return request<{ updated: boolean }>(`/companies/${companyId}/employees/${employeeId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+
   async updateEmployeePermissions(
     companyId: string,
     employeeId: string,
